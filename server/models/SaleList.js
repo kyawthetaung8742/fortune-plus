@@ -3,9 +3,22 @@ import mongoose from "mongoose";
 const saleListSchema = new mongoose.Schema(
   {
     date: { type: Date, required: true, default: Date.now },
-    product_id: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
-    customer_id: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
-    currency_type: { type: String, enum: ["kyat", "baht"], required: true },
+    product_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: true,
+    },
+    customer_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      required: true,
+    },
+    currency_type: {
+      type: String,
+      enum: ["kyat", "baht"],
+      required: true,
+      default: "baht",
+    },
     rate: { type: Number },
     quantity: { type: Number, required: true, min: 1 },
     original_price: { type: Number, required: true },
@@ -14,7 +27,7 @@ const saleListSchema = new mongoose.Schema(
     note: { type: String },
     created_by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("SaleList", saleListSchema);

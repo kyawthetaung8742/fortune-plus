@@ -29,6 +29,14 @@ export type Payment = {
   updatedAt: string;
 };
 
+export type ExchangeRate = {
+  _id: string;
+  type: "baht_to_kyat" | "kyat_to_baht";
+  rate: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type TransactionHistory = {
   _id: string;
   shareholder_id: string;

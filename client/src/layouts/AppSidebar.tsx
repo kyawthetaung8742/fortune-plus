@@ -48,6 +48,11 @@ const sidebarItems = [
     icon: Icons.ShoppingBag,
   },
   {
+    title: "Sale List",
+    url: "/sale-list",
+    icon: Icons.clipboardList,
+  },
+  {
     title: "Categories",
     url: "/categories",
     icon: Icons.noteBookTabs,

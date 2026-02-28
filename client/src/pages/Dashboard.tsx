@@ -1,13 +1,35 @@
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Icons } from "@/components/ui/icons";
 import { walletApi, type WalletSummary } from "@/api/wallet";
+import { exchangeRateApi } from "@/api/exchangeRate";
+import type { ExchangeRate } from "@/types/app";
 import { toast } from "sonner";
 
 const cardClassName = "bg-[#092b5d] text-white border-[#1e3a5f]";
 
+const typeLabels: Record<ExchangeRate["type"], string> = {
+  kyat_to_baht: "Kyat to Baht Price",
+  baht_to_kyat: "Baht to Kyat Price",
+};
+
 const Dashboard = () => {
   const [summary, setSummary] = useState<WalletSummary | null>(null);
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingRate, setEditingRate] = useState<ExchangeRate | null>(null);
+  const [editValue, setEditValue] = useState("");
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -25,6 +47,46 @@ const Dashboard = () => {
     };
     fetchSummary();
   }, []);
+
+  useEffect(() => {
+    const fetchRates = async () => {
+      try {
+        const res = await exchangeRateApi.list();
+        if (res.data.success && res.data.data) setExchangeRates(res.data.data);
+      } catch {
+        // ignore
+      }
+    };
+    fetchRates();
+  }, []);
+
+  const openEdit = (rate: ExchangeRate) => {
+    setEditingRate(rate);
+    setEditValue(String(rate.rate));
+    setEditOpen(true);
+  };
+
+  const handleSaveRate = async () => {
+    if (!editingRate) return;
+    const num = parseFloat(editValue);
+    if (isNaN(num) || num < 0) {
+      toast.error("Enter a valid rate");
+      return;
+    }
+    try {
+      const res = await exchangeRateApi.update(editingRate._id, { rate: num });
+      if (res.data.success && res.data.data) {
+        setExchangeRates((prev) =>
+          prev.map((r) => (r._id === res.data.data._id ? res.data.data : r)),
+        );
+        toast.success("Rate updated");
+        setEditOpen(false);
+      }
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Update failed");
+    }
+  };
 
   if (loading) {
     return (
@@ -47,7 +109,44 @@ const Dashboard = () => {
 
   return (
     <div className="p-6 space-y-8">
-      <h1 className="text-2xl font-semibold">Wallet Report</h1>
+      <h1 className="text-2xl font-semibold">Dashboard Report</h1>
+
+      {/* Exchange rates — single card */}
+      {exchangeRates.length > 0 && (
+        <section>
+          <h2 className="text-lg font-medium mb-4">Exchange rates</h2>
+          <Card className={`${cardClassName} max-w-md`}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-medium text-white">
+                Exchange rates for Today
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {exchangeRates.map((r) => (
+                <div
+                  key={r._id}
+                  className="flex items-center justify-between gap-2 py-1"
+                >
+                  <span className="text-white/90 text-sm">
+                    {typeLabels[r.type]}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{r.rate}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0 text-white hover:bg-white/20"
+                      onClick={() => openEdit(r)}
+                    >
+                      <Icons.pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </section>
+      )}
 
       {/* Overall amount — one card */}
       <section>
@@ -225,6 +324,41 @@ const Dashboard = () => {
           )}
         </div>
       </section>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              Edit rate
+              {editingRate && (
+                <span className="block text-sm font-normal text-muted-foreground mt-1">
+                  {typeLabels[editingRate.type]}
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="edit-rate">Rate</Label>
+              <Input
+                id="edit-rate"
+                type="number"
+                min="0"
+                step="0.01"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveRate}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

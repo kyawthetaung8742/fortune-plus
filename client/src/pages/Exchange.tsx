@@ -5,12 +5,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { shareholderApi } from "@/api/shareholder";
 import { paymentApi } from "@/api/payment";
+import { exchangeRateApi } from "@/api/exchangeRate";
 import type { Shareholder, Payment } from "@/types/app";
 import { toast } from "sonner";
 
 const Exchange = () => {
   const [shareholders, setShareholders] = useState<Shareholder[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [exchangeRates, setExchangeRates] = useState<{ type: string; rate: number }[]>([]);
   const [loading, setLoading] = useState(true);
   type ExchangeDirection = "kyat_to_baht" | "baht_to_kyat";
 
@@ -60,12 +62,15 @@ const Exchange = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [shRes, pRes] = await Promise.all([
+        const [shRes, pRes, rateRes] = await Promise.all([
           shareholderApi.list(),
           paymentApi.list(),
+          exchangeRateApi.list(),
         ]);
         if (shRes.data.success && shRes.data.data) setShareholders(shRes.data.data);
         if (pRes.data.success && pRes.data.data) setPayments(pRes.data.data);
+        if (rateRes.data.success && rateRes.data.data)
+          setExchangeRates(rateRes.data.data.map((r) => ({ type: r.type, rate: r.rate })));
       } catch (e: unknown) {
         const err = e as { response?: { data?: { message?: string } } };
         toast.error(err.response?.data?.message || "Failed to load data");
@@ -75,6 +80,15 @@ const Exchange = () => {
     };
     load();
   }, []);
+
+  useEffect(() => {
+    if (exchangeRates.length === 0) return;
+    const rateEntry =
+      form.direction === "kyat_to_baht"
+        ? exchangeRates.find((r) => r.type === "kyat_to_baht")
+        : exchangeRates.find((r) => r.type === "baht_to_kyat");
+    if (rateEntry) setForm((f) => ({ ...f, rate: String(rateEntry.rate) }));
+  }, [form.direction, exchangeRates]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

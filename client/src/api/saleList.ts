@@ -10,9 +10,29 @@ export type SaleListCreateItem = {
   note?: string;
 };
 
+export type SaleListListParams = {
+  customer_id?: string;
+  from?: string;
+  to?: string;
+  category_id?: string;
+  product_id?: string;
+  currency_type?: "kyat" | "baht";
+  page?: number;
+  limit?: number;
+};
+
+export type SaleListListResponse = {
+  success: boolean;
+  data: SaleListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
 export const saleListApi = {
-  list: (params?: { customer_id?: string; from?: string; to?: string }) =>
-    API.get<{ success: boolean; data: SaleListItem[] }>("/sale-list", { params }),
+  list: (params?: SaleListListParams) =>
+    API.get<SaleListListResponse>("/sale-list", { params }),
   getById: (id: string) =>
     API.get<{ success: boolean; data: SaleListItem }>(`/sale-list/${id}`),
   create: (data: {

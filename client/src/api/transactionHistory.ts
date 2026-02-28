@@ -1,16 +1,27 @@
 import API from "./axios";
 import type { TransactionHistory } from "@/types/app";
 
-type ListParams = {
+export type TransactionHistoryListParams = {
+  transaction_number?: string;
+  from?: string;
+  to?: string;
   shareholder_id?: string;
   payment_id?: string;
   transaction_type?: string;
+  page?: number;
+  limit?: number;
+};
+
+export type TransactionHistoryListResponse = {
+  success: boolean;
+  data: TransactionHistory[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 };
 
 export const transactionHistoryApi = {
-  list: (params?: ListParams) =>
-    API.get<{ success: boolean; data: TransactionHistory[] }>(
-      "/transaction-history",
-      { params }
-    ),
+  list: (params?: TransactionHistoryListParams) =>
+    API.get<TransactionHistoryListResponse>("/transaction-history", { params }),
 };

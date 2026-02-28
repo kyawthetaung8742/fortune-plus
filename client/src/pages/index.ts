@@ -6,6 +6,7 @@ export { default as TransactionHistoryPage } from "./TransactionHistory";
 export { default as Payments } from "./Payments";
 export { default as Customers } from "./Customers";
 export { default as Sale } from "./Sale";
+export { default as SaleListPage } from "./SaleListPage";
 export { default as Categories } from "./Categories";
 export { default as Products } from "./Products";
 export { default as Expenses } from "./Expenses";

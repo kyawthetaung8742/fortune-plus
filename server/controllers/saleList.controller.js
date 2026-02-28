@@ -30,17 +30,46 @@ export const list = async (req, res) => {
   try {
     const filter = {};
     if (req.query.customer_id) filter.customer_id = req.query.customer_id;
+    if (req.query.currency_type) filter.currency_type = req.query.currency_type;
     if (req.query.from || req.query.to) {
       filter.date = {};
       if (req.query.from) filter.date.$gte = new Date(req.query.from);
       if (req.query.to) filter.date.$lte = new Date(req.query.to);
     }
-    const saleLists = await SaleList.find(filter)
-      .populate("product_id", "name image sale_price")
-      .populate("customer_id", "name phone")
-      .sort({ date: -1, createdAt: -1 })
-      .lean();
-    res.json({ success: true, data: saleLists });
+    if (req.query.product_id) {
+      filter.product_id = req.query.product_id;
+    } else if (req.query.category_id) {
+      const productIds = await Product.find({ category_id: req.query.category_id }).distinct("_id");
+      filter.product_id = { $in: productIds };
+    }
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      SaleList.find(filter)
+        .populate({
+          path: "product_id",
+          select: "name image sale_price category_id",
+          populate: { path: "category_id", select: "name" },
+        })
+        .populate("customer_id", "name phone")
+        .sort({ date: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      SaleList.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil(total / limit) || 1;
+    res.json({
+      success: true,
+      data,
+      total,
+      page,
+      limit,
+      totalPages,
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

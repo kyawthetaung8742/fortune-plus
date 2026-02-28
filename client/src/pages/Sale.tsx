@@ -9,6 +9,7 @@ import { customerApi } from "@/api/customer";
 import { shareholderApi } from "@/api/shareholder";
 import { paymentApi } from "@/api/payment";
 import { saleListApi } from "@/api/saleList";
+import { exchangeRateApi } from "@/api/exchangeRate";
 import type { Category } from "@/types/app";
 import type { Product } from "@/types/app";
 import type { Customer } from "@/types/app";
@@ -116,6 +117,18 @@ const Sale = () => {
     }
   };
 
+  const fetchExchangeRates = async () => {
+    try {
+      const res = await exchangeRateApi.list();
+      if (res.data.success && res.data.data) {
+        const kyatToBaht = res.data.data.find((r) => r.type === "kyat_to_baht");
+        if (kyatToBaht != null) setKyatRate(String(kyatToBaht.rate));
+      }
+    } catch {
+      // keep default kyatRate
+    }
+  };
+
   useEffect(() => {
     Promise.all([
       fetchCategories(),
@@ -123,6 +136,7 @@ const Sale = () => {
       fetchCustomers(),
       fetchShareholders(),
       fetchPayments(),
+      fetchExchangeRates(),
     ]).finally(() => setLoading(false));
   }, []);
 
