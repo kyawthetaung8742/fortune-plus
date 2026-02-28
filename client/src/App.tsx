@@ -3,7 +3,7 @@ import { Toaster } from "sonner";
 import { LoadingProvider } from "./contexts/LoadingContext";
 import Main from "./layouts/Main";
 import Error from "./pages/Error";
-import { Dashboard, Login, UserList } from "./pages";
+import { Dashboard, Login, UserList, Shareholders, TransactionHistoryPage, Payments } from "./pages";
 import { SidebarProvider } from "./components/ui/sidebar";
 
 function App() {
@@ -20,7 +20,10 @@ function App() {
       errorElement: <Error />,
       children: [
         { index: true, element: <Dashboard /> },
-        { path: "/users", element: <UserList /> },
+        { path: "shareholders", element: <Shareholders /> },
+        { path: "transaction-history", element: <TransactionHistoryPage /> },
+        { path: "payments", element: <Payments /> },
+        { path: "users", element: <UserList /> },
       ],
     },
     {

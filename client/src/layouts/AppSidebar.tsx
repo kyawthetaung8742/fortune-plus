@@ -28,6 +28,21 @@ const sidebarItems = [
     icon: Icons.layoutDashboard,
   },
   {
+    title: "Shareholders",
+    url: "/shareholders",
+    icon: Icons.users,
+  },
+  {
+    title: "Transaction History",
+    url: "/transaction-history",
+    icon: Icons.clipboardList,
+  },
+  {
+    title: "Payment",
+    url: "/payments",
+    icon: Icons.wallet,
+  },
+  {
     title: "User Management",
     url: "#",
     icon: Icons.user,

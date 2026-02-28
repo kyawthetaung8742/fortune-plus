@@ -6,11 +6,9 @@ import User from "../models/User.js";
 dotenv.config();
 
 const users = [
-  { name: "Alice Johnson", username: "alice", password: "password123" },
-  { name: "Bob Smith", username: "bob", password: "password123" },
-  { name: "Carol Williams", username: "carol", password: "password123" },
-  { name: "David Brown", username: "david", password: "password123" },
-  { name: "Eve Davis", username: "eve", password: "password123" },
+  { name: "Kyaw Thet Aung", username: "kyawthetaung", password: "password123" },
+  { name: "Aung Aung", username: "aungaung", password: "password123" },
+  { name: "Cho Cho", username: "chocho", password: "password123" },
 ];
 
 async function seedUsers() {
@@ -29,7 +27,7 @@ async function seedUsers() {
     await User.deleteMany({});
     await User.insertMany(hashed);
 
-    console.log("Seeded 5 users successfully");
+    console.log("Seeded 3 users successfully");
   } catch (err) {
     console.error("Seed failed:", err.message);
     process.exit(1);
