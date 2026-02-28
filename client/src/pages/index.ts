@@ -11,3 +11,4 @@ export { default as Categories } from "./Categories";
 export { default as Products } from "./Products";
 export { default as Expenses } from "./Expenses";
 export { default as Exchange } from "./Exchange";
+export { default as ExchangeReport } from "./ExchangeReport";

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,7 @@ import type { Shareholder, Payment } from "@/types/app";
 import { toast } from "sonner";
 
 const Exchange = () => {
+  const navigate = useNavigate();
   const [shareholders, setShareholders] = useState<Shareholder[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [exchangeRates, setExchangeRates] = useState<{ type: string; rate: number }[]>([]);
@@ -136,6 +138,7 @@ const Exchange = () => {
         receive_amount: "",
         note: "",
       }));
+      navigate("/transaction-history");
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string } } };
       toast.error(err.response?.data?.message || "Exchange failed");

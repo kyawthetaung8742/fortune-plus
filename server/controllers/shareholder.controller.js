@@ -29,7 +29,8 @@ export const list = async (req, res) => {
 export const create = async (req, res) => {
   try {
     const { error } = createSchema.validate(req.body);
-    if (error) return res.status(400).json({ message: error.details[0].message });
+    if (error)
+      return res.status(400).json({ message: error.details[0].message });
 
     const created = await Shareholder.create({
       ...req.body,
@@ -45,7 +46,9 @@ export const getById = async (req, res) => {
   try {
     const shareholder = await Shareholder.findById(req.params.id).lean();
     if (!shareholder)
-      return res.status(404).json({ success: false, message: "Shareholder not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Shareholder not found" });
     res.json({ success: true, data: shareholder });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -55,15 +58,18 @@ export const getById = async (req, res) => {
 export const update = async (req, res) => {
   try {
     const { error } = updateSchema.validate(req.body);
-    if (error) return res.status(400).json({ message: error.details[0].message });
+    if (error)
+      return res.status(400).json({ message: error.details[0].message });
 
     const updated = await Shareholder.findByIdAndUpdate(
       req.params.id,
       req.body,
-      { new: true }
+      { new: true },
     ).lean();
     if (!updated)
-      return res.status(404).json({ success: false, message: "Shareholder not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Shareholder not found" });
     res.json({ success: true, data: updated });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -79,7 +85,8 @@ const depositSchema = Joi.object({
 export const deposit = async (req, res) => {
   try {
     const { error } = depositSchema.validate(req.body);
-    if (error) return res.status(400).json({ message: error.details[0].message });
+    if (error)
+      return res.status(400).json({ message: error.details[0].message });
 
     const shareholderId = new mongoose.Types.ObjectId(req.params.id);
     const paymentId = new mongoose.Types.ObjectId(req.body.payment_id);
@@ -87,7 +94,10 @@ export const deposit = async (req, res) => {
     const note = req.body.note || "";
     const createdBy = req.user._id;
 
-    let wallet = await Wallet.findOne({ shareholder_id: shareholderId, payment_id: paymentId });
+    let wallet = await Wallet.findOne({
+      shareholder_id: shareholderId,
+      payment_id: paymentId,
+    });
     const beforeAmount = wallet ? wallet.amount : 0;
     const afterAmount = beforeAmount + amount;
 
@@ -135,7 +145,8 @@ const withdrawSchema = Joi.object({
 export const withdraw = async (req, res) => {
   try {
     const { error } = withdrawSchema.validate(req.body);
-    if (error) return res.status(400).json({ message: error.details[0].message });
+    if (error)
+      return res.status(400).json({ message: error.details[0].message });
 
     const shareholderId = new mongoose.Types.ObjectId(req.params.id);
     const paymentId = new mongoose.Types.ObjectId(req.body.payment_id);
@@ -143,9 +154,14 @@ export const withdraw = async (req, res) => {
     const note = req.body.note || "";
     const createdBy = req.user._id;
 
-    const wallet = await Wallet.findOne({ shareholder_id: shareholderId, payment_id: paymentId });
+    const wallet = await Wallet.findOne({
+      shareholder_id: shareholderId,
+      payment_id: paymentId,
+    });
     if (!wallet)
-      return res.status(400).json({ message: "Wallet not found for this shareholder and payment" });
+      return res
+        .status(400)
+        .json({ message: "Wallet not found for this shareholder and payment" });
     if (wallet.amount < amount)
       return res.status(400).json({ message: "Insufficient balance" });
 
@@ -188,10 +204,13 @@ const transferSchema = Joi.object({
 export const transfer = async (req, res) => {
   try {
     const { error } = transferSchema.validate(req.body);
-    if (error) return res.status(400).json({ message: error.details[0].message });
+    if (error)
+      return res.status(400).json({ message: error.details[0].message });
 
     const fromShareholderId = new mongoose.Types.ObjectId(req.params.id);
-    const toShareholderId = new mongoose.Types.ObjectId(req.body.to_shareholder_id);
+    const toShareholderId = new mongoose.Types.ObjectId(
+      req.body.to_shareholder_id,
+    );
     const fromPaymentId = new mongoose.Types.ObjectId(req.body.payment_id);
     const toPaymentId = req.body.to_payment_id
       ? new mongoose.Types.ObjectId(req.body.to_payment_id)
@@ -201,7 +220,9 @@ export const transfer = async (req, res) => {
     const createdBy = req.user._id;
 
     if (fromShareholderId.equals(toShareholderId))
-      return res.status(400).json({ message: "Cannot transfer to same shareholder" });
+      return res
+        .status(400)
+        .json({ message: "Cannot transfer to same shareholder" });
 
     if (!toPaymentId.equals(fromPaymentId)) {
       const fromPayment = await Payment.findById(fromPaymentId).lean();
@@ -211,7 +232,9 @@ export const transfer = async (req, res) => {
       const fromType = (fromPayment.currency_type || "").toLowerCase();
       const toType = (toPayment.currency_type || "").toLowerCase();
       if (fromType !== toType)
-        return res.status(400).json({ message: "To payment must have same currency type as from payment" });
+        return res.status(400).json({
+          message: "To payment must have same currency type as from payment",
+        });
     }
 
     const fromWallet = await Wallet.findOne({
@@ -297,7 +320,8 @@ const exchangeSchema = Joi.object({
 export const exchange = async (req, res) => {
   try {
     const { error } = exchangeSchema.validate(req.body);
-    if (error) return res.status(400).json({ message: error.details[0].message });
+    if (error)
+      return res.status(400).json({ message: error.details[0].message });
 
     const fromShareholderId = new mongoose.Types.ObjectId(req.params.id);
     const toShareholderId = req.body.to_shareholder_id
@@ -311,7 +335,9 @@ export const exchange = async (req, res) => {
     const createdBy = req.user._id;
 
     if (fromPaymentId.equals(toPaymentId))
-      return res.status(400).json({ message: "From and to payment must be different (e.g. Kyat and Baht)" });
+      return res.status(400).json({
+        message: "From and to payment must be different (e.g. Kyat and Baht)",
+      });
 
     const toAmount = fromAmount / rate;
 
@@ -320,9 +346,13 @@ export const exchange = async (req, res) => {
       payment_id: fromPaymentId,
     });
     if (!fromWallet)
-      return res.status(400).json({ message: "Source wallet not found for this payment" });
+      return res
+        .status(400)
+        .json({ message: "Source wallet not found for this payment" });
     if (fromWallet.amount < fromAmount)
-      return res.status(400).json({ message: "Insufficient balance in source currency" });
+      return res
+        .status(400)
+        .json({ message: "Insufficient balance in source currency" });
 
     let toWallet = await Wallet.findOne({
       shareholder_id: toShareholderId,
@@ -360,7 +390,7 @@ export const exchange = async (req, res) => {
         amount: -fromAmount,
         after_amount: fromAfterAmount,
         transaction_type: "exchange_out",
-        note: note || `Exchange to other currency (rate: ${rate})`,
+        note: note || "Exchange to other currency",
         created_by: createdBy,
       },
       {
@@ -372,7 +402,7 @@ export const exchange = async (req, res) => {
         amount: toAmount,
         after_amount: toAfterAmount,
         transaction_type: "exchange_in",
-        note: note || `Exchange from other currency (rate: ${rate})`,
+        note: note || "Exchange from other currency",
         created_by: createdBy,
       },
     ]);

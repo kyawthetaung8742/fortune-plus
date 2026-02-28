@@ -29,8 +29,12 @@ const sidebarItems = [
   },
   {
     title: "Exchange",
-    url: "/exchange",
+    url: "#",
     icon: Icons.coins,
+    items: [
+      { title: "Exchange", url: "/exchange" },
+      { title: "Exchange Report", url: "/exchange-report" },
+    ],
   },
   {
     title: "Shareholders",
@@ -38,55 +42,32 @@ const sidebarItems = [
     icon: Icons.users,
   },
   {
-    title: "Customers",
-    url: "/customers",
-    icon: Icons.bookUser,
-  },
-  {
-    title: "Sale",
-    url: "/sale",
+    title: "Sales",
+    url: "#",
     icon: Icons.ShoppingBag,
+    items: [
+      { title: "Sale", url: "/sale" },
+      { title: "Sale List", url: "/sale-list" },
+      { title: "Customers", url: "/customers" },
+      { title: "Categories", url: "/categories" },
+      { title: "Products", url: "/products" },
+    ],
   },
   {
-    title: "Sale List",
-    url: "/sale-list",
-    icon: Icons.clipboardList,
-  },
-  {
-    title: "Categories",
-    url: "/categories",
-    icon: Icons.noteBookTabs,
-  },
-  {
-    title: "Products",
-    url: "/products",
-    icon: Icons.info,
-  },
-  {
-    title: "Transaction History",
-    url: "/transaction-history",
-    icon: Icons.clipboardList,
-  },
-  {
-    title: "Expenses",
-    url: "/expenses",
-    icon: Icons.hand,
-  },
-  {
-    title: "Payment",
-    url: "/payments",
+    title: "Transactions",
+    url: "#",
     icon: Icons.wallet,
+    items: [
+      { title: "Transaction History", url: "/transaction-history" },
+      { title: "Expenses", url: "/expenses" },
+      { title: "Payment", url: "/payments" },
+    ],
   },
   {
     title: "User Management",
     url: "#",
     icon: Icons.user,
-    items: [
-      {
-        title: "Users",
-        url: "/users",
-      },
-    ],
+    items: [{ title: "Users", url: "/users" }],
   },
 ];
 
