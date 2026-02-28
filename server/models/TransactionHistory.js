@@ -11,7 +11,7 @@ const transactionHistorySchema = new mongoose.Schema(
     after_amount: { type: Number, required: true },
     transaction_type: {
       type: String,
-      enum: ["deposit", "withdraw", "transfer", "receive", "buy", "exchange_out", "exchange_in"],
+      enum: ["deposit", "withdraw", "transfer", "receive", "buy", "exchange_out", "exchange_in", "expense", "expense_reversal"],
       required: true,
     },
     note: { type: String },

@@ -38,9 +38,19 @@ const sidebarItems = [
     icon: Icons.users,
   },
   {
+    title: "Customers",
+    url: "/customers",
+    icon: Icons.bookUser,
+  },
+  {
     title: "Transaction History",
     url: "/transaction-history",
     icon: Icons.clipboardList,
+  },
+  {
+    title: "Expenses",
+    url: "/expenses",
+    icon: Icons.hand,
   },
   {
     title: "Payment",

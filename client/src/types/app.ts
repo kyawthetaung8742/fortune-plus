@@ -38,7 +38,7 @@ export type TransactionHistory = {
   before_amount: number;
   amount: number;
   after_amount: number;
-  transaction_type: "deposit" | "withdraw" | "transfer" | "receive" | "buy" | "exchange_out" | "exchange_in";
+  transaction_type: "deposit" | "withdraw" | "transfer" | "receive" | "buy" | "exchange_out" | "exchange_in" | "expense" | "expense_reversal";
   note?: string;
   created_by?: string;
   createdAt: string;
@@ -50,6 +50,29 @@ export type Wallet = {
   shareholder_id: string;
   payment_id: string | Payment;
   amount: number;
+  created_by?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Customer = {
+  _id: string;
+  name: string;
+  phone?: string;
+  address?: string;
+  note?: string;
+  created_by?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Expense = {
+  _id: string;
+  shareholder_id: string | { _id: string; name: string };
+  payment_id: string | { _id: string; name: string; currency_type?: string };
+  date: string;
+  amount: number;
+  note?: string;
   created_by?: string;
   createdAt: string;
   updatedAt: string;

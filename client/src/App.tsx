@@ -3,7 +3,7 @@ import { Toaster } from "sonner";
 import { LoadingProvider } from "./contexts/LoadingContext";
 import Main from "./layouts/Main";
 import Error from "./pages/Error";
-import { Dashboard, Login, UserList, Shareholders, TransactionHistoryPage, Payments, Exchange } from "./pages";
+import { Dashboard, Login, UserList, Shareholders, TransactionHistoryPage, Payments, Exchange, Customers, Expenses } from "./pages";
 import { SidebarProvider } from "./components/ui/sidebar";
 
 function App() {
@@ -23,6 +23,8 @@ function App() {
         { path: "shareholders", element: <Shareholders /> },
         { path: "transaction-history", element: <TransactionHistoryPage /> },
         { path: "payments", element: <Payments /> },
+        { path: "customers", element: <Customers /> },
+        { path: "expenses", element: <Expenses /> },
         { path: "exchange", element: <Exchange /> },
         { path: "users", element: <UserList /> },
       ],
