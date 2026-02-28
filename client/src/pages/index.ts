@@ -4,3 +4,4 @@ export { default as UserList } from "./user_management/users/index";
 export { default as Shareholders } from "./Shareholders";
 export { default as TransactionHistoryPage } from "./TransactionHistory";
 export { default as Payments } from "./Payments";
+export { default as Exchange } from "./Exchange";

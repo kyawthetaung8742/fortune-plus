@@ -7,6 +7,7 @@ import {
   deposit,
   withdraw,
   transfer,
+  exchange,
 } from "../controllers/shareholder.controller.js";
 
 const router = express.Router();
@@ -18,5 +19,6 @@ router.put("/:id", update);
 router.post("/:id/deposit", deposit);
 router.post("/:id/withdraw", withdraw);
 router.post("/:id/transfer", transfer);
+router.post("/:id/exchange", exchange);
 
 export default router;

@@ -180,6 +180,7 @@ export const withdraw = async (req, res) => {
 const transferSchema = Joi.object({
   payment_id: Joi.string().required(),
   to_shareholder_id: Joi.string().required(),
+  to_payment_id: Joi.string().allow(""),
   amount: Joi.number().min(0.01).required(),
   note: Joi.string().allow(""),
 });
@@ -191,7 +192,10 @@ export const transfer = async (req, res) => {
 
     const fromShareholderId = new mongoose.Types.ObjectId(req.params.id);
     const toShareholderId = new mongoose.Types.ObjectId(req.body.to_shareholder_id);
-    const paymentId = new mongoose.Types.ObjectId(req.body.payment_id);
+    const fromPaymentId = new mongoose.Types.ObjectId(req.body.payment_id);
+    const toPaymentId = req.body.to_payment_id
+      ? new mongoose.Types.ObjectId(req.body.to_payment_id)
+      : fromPaymentId;
     const amount = Number(req.body.amount);
     const note = req.body.note || "";
     const createdBy = req.user._id;
@@ -199,9 +203,20 @@ export const transfer = async (req, res) => {
     if (fromShareholderId.equals(toShareholderId))
       return res.status(400).json({ message: "Cannot transfer to same shareholder" });
 
+    if (!toPaymentId.equals(fromPaymentId)) {
+      const fromPayment = await Payment.findById(fromPaymentId).lean();
+      const toPayment = await Payment.findById(toPaymentId).lean();
+      if (!fromPayment || !toPayment)
+        return res.status(400).json({ message: "Invalid payment" });
+      const fromType = (fromPayment.currency_type || "").toLowerCase();
+      const toType = (toPayment.currency_type || "").toLowerCase();
+      if (fromType !== toType)
+        return res.status(400).json({ message: "To payment must have same currency type as from payment" });
+    }
+
     const fromWallet = await Wallet.findOne({
       shareholder_id: fromShareholderId,
-      payment_id: paymentId,
+      payment_id: fromPaymentId,
     });
     if (!fromWallet)
       return res.status(400).json({ message: "Sender wallet not found" });
@@ -210,7 +225,7 @@ export const transfer = async (req, res) => {
 
     let toWallet = await Wallet.findOne({
       shareholder_id: toShareholderId,
-      payment_id: paymentId,
+      payment_id: toPaymentId,
     });
     const toBeforeAmount = toWallet ? toWallet.amount : 0;
     const toAfterAmount = toBeforeAmount + amount;
@@ -218,7 +233,7 @@ export const transfer = async (req, res) => {
     if (!toWallet) {
       toWallet = await Wallet.create({
         shareholder_id: toShareholderId,
-        payment_id: paymentId,
+        payment_id: toPaymentId,
         amount: toAfterAmount,
         created_by: createdBy,
       });
@@ -237,7 +252,7 @@ export const transfer = async (req, res) => {
     await TransactionHistory.insertMany([
       {
         shareholder_id: fromShareholderId,
-        payment_id: paymentId,
+        payment_id: fromPaymentId,
         transaction_number: transactionNumber,
         date: new Date(),
         before_amount: fromBeforeAmount,
@@ -249,7 +264,7 @@ export const transfer = async (req, res) => {
       },
       {
         shareholder_id: toShareholderId,
-        payment_id: paymentId,
+        payment_id: toPaymentId,
         transaction_number: transactionNumber,
         date: new Date(),
         before_amount: toBeforeAmount,
@@ -264,6 +279,107 @@ export const transfer = async (req, res) => {
     res.status(201).json({
       success: true,
       data: { transaction_number: transactionNumber },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+const exchangeSchema = Joi.object({
+  from_payment_id: Joi.string().required(),
+  to_payment_id: Joi.string().required(),
+  to_shareholder_id: Joi.string().allow(""),
+  from_amount: Joi.number().min(0.01).required(),
+  rate: Joi.number().min(0.0001).required(),
+  note: Joi.string().allow(""),
+});
+
+export const exchange = async (req, res) => {
+  try {
+    const { error } = exchangeSchema.validate(req.body);
+    if (error) return res.status(400).json({ message: error.details[0].message });
+
+    const fromShareholderId = new mongoose.Types.ObjectId(req.params.id);
+    const toShareholderId = req.body.to_shareholder_id
+      ? new mongoose.Types.ObjectId(req.body.to_shareholder_id)
+      : fromShareholderId;
+    const fromPaymentId = new mongoose.Types.ObjectId(req.body.from_payment_id);
+    const toPaymentId = new mongoose.Types.ObjectId(req.body.to_payment_id);
+    const fromAmount = Number(req.body.from_amount);
+    const rate = Number(req.body.rate);
+    const note = req.body.note || "";
+    const createdBy = req.user._id;
+
+    if (fromPaymentId.equals(toPaymentId))
+      return res.status(400).json({ message: "From and to payment must be different (e.g. Kyat and Baht)" });
+
+    const toAmount = fromAmount / rate;
+
+    const fromWallet = await Wallet.findOne({
+      shareholder_id: fromShareholderId,
+      payment_id: fromPaymentId,
+    });
+    if (!fromWallet)
+      return res.status(400).json({ message: "Source wallet not found for this payment" });
+    if (fromWallet.amount < fromAmount)
+      return res.status(400).json({ message: "Insufficient balance in source currency" });
+
+    let toWallet = await Wallet.findOne({
+      shareholder_id: toShareholderId,
+      payment_id: toPaymentId,
+    });
+    const toBeforeAmount = toWallet ? toWallet.amount : 0;
+    const toAfterAmount = toBeforeAmount + toAmount;
+
+    if (!toWallet) {
+      toWallet = await Wallet.create({
+        shareholder_id: toShareholderId,
+        payment_id: toPaymentId,
+        amount: toAfterAmount,
+        created_by: createdBy,
+      });
+    } else {
+      toWallet.amount = toAfterAmount;
+      await toWallet.save();
+    }
+
+    const fromBeforeAmount = fromWallet.amount;
+    const fromAfterAmount = fromBeforeAmount - fromAmount;
+    fromWallet.amount = fromAfterAmount;
+    await fromWallet.save();
+
+    const transactionNumber = await getNextTransactionNumber();
+
+    await TransactionHistory.insertMany([
+      {
+        shareholder_id: fromShareholderId,
+        payment_id: fromPaymentId,
+        transaction_number: transactionNumber,
+        date: new Date(),
+        before_amount: fromBeforeAmount,
+        amount: -fromAmount,
+        after_amount: fromAfterAmount,
+        transaction_type: "exchange_out",
+        note: note || `Exchange to other currency (rate: ${rate})`,
+        created_by: createdBy,
+      },
+      {
+        shareholder_id: toShareholderId,
+        payment_id: toPaymentId,
+        transaction_number: transactionNumber,
+        date: new Date(),
+        before_amount: toBeforeAmount,
+        amount: toAmount,
+        after_amount: toAfterAmount,
+        transaction_type: "exchange_in",
+        note: note || `Exchange from other currency (rate: ${rate})`,
+        created_by: createdBy,
+      },
+    ]);
+
+    res.status(201).json({
+      success: true,
+      data: { transaction_number: transactionNumber, to_amount: toAmount },
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

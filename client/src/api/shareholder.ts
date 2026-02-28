@@ -24,12 +24,28 @@ export const shareholderApi = {
     data: {
       payment_id: string;
       to_shareholder_id: string;
+      to_payment_id?: string;
       amount: number;
       note?: string;
     }
   ) =>
     API.post<{ success: boolean; data: { transaction_number: string } }>(
       `/shareholders/${id}/transfer`,
+      data
+    ),
+  exchange: (
+    id: string,
+    data: {
+      from_payment_id: string;
+      to_payment_id: string;
+      to_shareholder_id?: string;
+      from_amount: number;
+      rate: number;
+      note?: string;
+    }
+  ) =>
+    API.post<{ success: boolean; data: { transaction_number: string; to_amount: number } }>(
+      `/shareholders/${id}/exchange`,
       data
     ),
 };

@@ -19,13 +19,18 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, Link } from "react-router-dom";
 
 const sidebarItems = [
   {
     title: "Dashboard",
     url: "/",
     icon: Icons.layoutDashboard,
+  },
+  {
+    title: "Exchange",
+    url: "/exchange",
+    icon: Icons.coins,
   },
   {
     title: "Shareholders",
@@ -67,9 +72,16 @@ export function AppSidebar() {
         </div>
       )}
       <SidebarHeader className="text-white admin-sidebar">
-        <div className="flex flex-col items-center">
-          <div className="px-18 py-2 h-30"></div>
-        </div>
+        <Link
+          to="/"
+          className="flex flex-col items-center justify-center w-full focus:outline-none"
+        >
+          <img
+            src="images/logo.png"
+            alt="Logo"
+            className="h-30 w-auto max-w-[160px] object-contain"
+          />
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroupContent>

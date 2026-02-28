@@ -50,10 +50,10 @@ const Shareholders = () => {
   const [transferForm, setTransferForm] = useState({
     payment_id: "",
     to_shareholder_id: "",
+    to_payment_id: "",
     amount: "",
     note: "",
   });
-
   const fetchShareholders = async () => {
     try {
       const res = await shareholderApi.list();
@@ -109,6 +109,7 @@ const Shareholders = () => {
     setTransferForm({
       payment_id: "",
       to_shareholder_id: "",
+      to_payment_id: "",
       amount: "",
       note: "",
     });
@@ -229,6 +230,7 @@ const Shareholders = () => {
       await shareholderApi.transfer(selectedShareholder._id, {
         payment_id: transferForm.payment_id,
         to_shareholder_id: transferForm.to_shareholder_id,
+        to_payment_id: transferForm.to_payment_id || undefined,
         amount,
         note: transferForm.note || undefined,
       });
@@ -584,7 +586,11 @@ const Shareholders = () => {
               <select
                 value={transferForm.payment_id}
                 onChange={(e) =>
-                  setTransferForm((f) => ({ ...f, payment_id: e.target.value }))
+                  setTransferForm((f) => ({
+                    ...f,
+                    payment_id: e.target.value,
+                    to_payment_id: "",
+                  }))
                 }
                 className="w-full border rounded px-3 py-2 mt-1 text-sm"
                 required
@@ -605,6 +611,7 @@ const Shareholders = () => {
                   setTransferForm((f) => ({
                     ...f,
                     to_shareholder_id: e.target.value,
+                    to_payment_id: "",
                   }))
                 }
                 className="w-full border rounded px-3 py-2 mt-1 text-sm"
@@ -619,6 +626,39 @@ const Shareholders = () => {
                     </option>
                   ))}
               </select>
+            </div>
+            <div>
+              <Label>To payment (same currency)</Label>
+              <select
+                value={transferForm.to_payment_id}
+                onChange={(e) =>
+                  setTransferForm((f) => ({ ...f, to_payment_id: e.target.value }))
+                }
+                className="w-full border rounded px-3 py-2 mt-1 text-sm"
+                required
+                disabled={!transferForm.payment_id}
+              >
+                <option value="">— Select payment —</option>
+                {(() => {
+                  const fromPayment = payments.find(
+                    (p) => p._id === transferForm.payment_id
+                  );
+                  const currencyType = (fromPayment?.currency_type || "").toLowerCase();
+                  if (!currencyType) return null;
+                  return payments
+                    .filter(
+                      (p) => (p.currency_type || "").toLowerCase() === currencyType
+                    )
+                    .map((p) => (
+                      <option key={p._id} value={p._id}>
+                        {p.name} ({p.currency_type})
+                      </option>
+                    ));
+                })()}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Choose which payment/wallet the recipient receives into (same currency type).
+              </p>
             </div>
             <div>
               <Label htmlFor="transfer-amount">Amount</Label>

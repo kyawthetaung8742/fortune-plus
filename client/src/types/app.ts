@@ -38,7 +38,7 @@ export type TransactionHistory = {
   before_amount: number;
   amount: number;
   after_amount: number;
-  transaction_type: "deposit" | "withdraw" | "transfer" | "receive" | "buy";
+  transaction_type: "deposit" | "withdraw" | "transfer" | "receive" | "buy" | "exchange_out" | "exchange_in";
   note?: string;
   created_by?: string;
   createdAt: string;
