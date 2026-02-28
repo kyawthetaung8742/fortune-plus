@@ -43,6 +43,21 @@ const sidebarItems = [
     icon: Icons.bookUser,
   },
   {
+    title: "Sale",
+    url: "/sale",
+    icon: Icons.ShoppingBag,
+  },
+  {
+    title: "Categories",
+    url: "/categories",
+    icon: Icons.noteBookTabs,
+  },
+  {
+    title: "Products",
+    url: "/products",
+    icon: Icons.info,
+  },
+  {
     title: "Transaction History",
     url: "/transaction-history",
     icon: Icons.clipboardList,

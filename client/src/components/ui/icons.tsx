@@ -26,6 +26,7 @@ import {
   Plus,
   Save,
   Settings,
+  ShoppingBag,
   Trash2,
   Undo2,
   User,
@@ -72,4 +73,5 @@ export const Icons = {
   trash2: Trash2,
   info: Info,
   uerRoundPlus: UserRoundPlus,
+  ShoppingBag: ShoppingBag,
 };

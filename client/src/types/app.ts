@@ -38,7 +38,7 @@ export type TransactionHistory = {
   before_amount: number;
   amount: number;
   after_amount: number;
-  transaction_type: "deposit" | "withdraw" | "transfer" | "receive" | "buy" | "exchange_out" | "exchange_in" | "expense" | "expense_reversal";
+  transaction_type: "deposit" | "withdraw" | "transfer" | "receive" | "buy" | "exchange_out" | "exchange_in" | "expense" | "expense_reversal" | "product_sale";
   note?: string;
   created_by?: string;
   createdAt: string;
@@ -72,6 +72,46 @@ export type Expense = {
   payment_id: string | { _id: string; name: string; currency_type?: string };
   date: string;
   amount: number;
+  note?: string;
+  created_by?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Category = {
+  _id: string;
+  name: string;
+  is_sale?: boolean;
+  created_by?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Product = {
+  _id: string;
+  category_id: string | { _id: string; name: string; is_sale?: boolean };
+  name: string;
+  quantity: number;
+  image?: string;
+  purchase_price: number;
+  sale_price: number;
+  note?: string;
+  created_by?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SaleListItem = {
+  _id: string;
+  date: string;
+  product_id: string | { _id: string; name: string; image?: string; sale_price?: number };
+  customer_id: string | { _id: string; name: string; phone?: string };
+  currency_type: "kyat" | "baht";
+  rate?: number;
+  quantity: number;
+  original_price: number;
+  sale_price: number;
+  discount: number;
   note?: string;
   created_by?: string;
   createdAt: string;
