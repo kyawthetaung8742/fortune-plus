@@ -206,7 +206,7 @@ const Dashboard = () => {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {summary?.byShareholder?.map((sh) => (
             <Card key={sh.shareholder_id} className={cardClassName}>
-              <CardHeader className="pb-2">
+              <CardHeader>
                 <CardTitle className="text-base font-medium text-white">
                   {sh.shareholderName}
                 </CardTitle>
@@ -270,46 +270,59 @@ const Dashboard = () => {
                             </div>
                           ))}
                         </div>
-                        <div className="space-y-2 pt-2">
-                          <p className="text-xs text-white/60 uppercase tracking-wide">
-                            Deposit / Withdraw / Remain by currency
+                        <div className="pt-2">
+                          <p className="text-xs text-white/60 uppercase tracking-wide mb-2">
+                            Deposit / Withdraw
                           </p>
-                          {entries.map((currencyType) => {
-                            const deposit = Number(
-                              depositByCurrency[currencyType] ?? 0,
-                            );
-                            const withdraw = Number(
-                              withdrawByCurrency[currencyType] ?? 0,
-                            );
-                            return (
-                              <div
-                                key={currencyType}
-                                className="text-sm space-y-0.5 rounded px-2 py-1.5 bg-white/5"
-                              >
-                                <div className="flex justify-between">
-                                  <span className="text-white/80 capitalize font-medium">
-                                    {currencyType}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between text-xs pl-1">
-                                  <span className="text-white/60">Deposit</span>
-                                  <span>{deposit.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between text-xs pl-1">
-                                  <span className="text-white/60">
+                          <div className="rounded overflow-hidden border border-white/10">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="bg-white/10 text-left">
+                                  <th className="px-2 py-1.5 text-white/80 font-medium capitalize">
+                                    Currency
+                                  </th>
+                                  <th className="px-2 py-1.5 text-white/80 font-medium">
+                                    Deposit
+                                  </th>
+                                  <th className="px-2 py-1.5 text-white/80 font-medium">
                                     Withdraw
-                                  </span>
-                                  <span>{withdraw.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between text-xs pl-1">
-                                  <span className="text-white/60">Remain</span>
-                                  <span className="font-medium">
-                                    {deposit - withdraw}
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          })}
+                                  </th>
+                                  <th className="px-2 py-1.5 text-white/80 font-medium">
+                                    Remain
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {entries.map((currencyType) => {
+                                  const deposit = Number(
+                                    depositByCurrency[currencyType] ?? 0,
+                                  );
+                                  const withdraw = Number(
+                                    withdrawByCurrency[currencyType] ?? 0,
+                                  );
+                                  return (
+                                    <tr
+                                      key={currencyType}
+                                      className="border-t border-white/10 bg-white/5"
+                                    >
+                                      <td className="px-2 py-1.5 text-white/80 capitalize font-medium">
+                                        {currencyType}
+                                      </td>
+                                      <td className="px-2 py-1.5">
+                                        {deposit.toLocaleString()}
+                                      </td>
+                                      <td className="px-2 py-1.5">
+                                        {withdraw.toLocaleString()}
+                                      </td>
+                                      <td className="px-2 py-1.5 font-medium">
+                                        {(deposit - withdraw).toLocaleString()}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       </>
                     );

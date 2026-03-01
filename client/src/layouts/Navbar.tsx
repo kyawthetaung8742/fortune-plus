@@ -1,9 +1,24 @@
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Icons } from "@/components/ui/icons";
 import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
+
 const Navbar = () => {
   const name = localStorage.getItem("name");
   const { open, isMobile } = useSidebar();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("name");
+    navigate("/login");
+  };
 
   return (
     <>
@@ -21,13 +36,27 @@ const Navbar = () => {
           <button className="border-1 border-gray-200 p-2 rounded-sm text-gray-500 hover:text-black">
             <Icons.bellDot size={24} />
           </button>
-          <button className="flex gap-2 items-center px-2  border-1 border-gray-200 rounded-sm text-gray-500 hover:text-black">
-            <Icons.circleUser size={24} />
-            <div className="flex flex-col text-left">
-              <span className="text-sm p-0 font-bold">{name}</span>
-              <span className="text-sm p-0">Admin</span>
-            </div>
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex gap-2 items-center px-2 border-1 border-gray-200 rounded-sm text-gray-500 hover:text-black">
+                <Icons.circleUser size={24} />
+                <div className="flex flex-col text-left">
+                  <span className="text-sm p-0 font-bold">{name}</span>
+                  <span className="text-sm p-0">Admin</span>
+                </div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={handleLogout}
+                className="cursor-pointer"
+              >
+                <Icons.logout className="size-4" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
     </>

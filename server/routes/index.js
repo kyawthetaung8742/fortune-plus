@@ -9,9 +9,11 @@ import categoryRoutes from "./category.routes.js";
 import productRoutes from "./product.routes.js";
 import saleListRoutes from "./saleList.routes.js";
 import exchangeRateRoutes from "./exchangeRate.routes.js";
+import userRoutes from "./user.routes.js";
 
 const router = express.Router();
 
+router.use("/users", userRoutes);
 router.use("/shareholders", shareholderRoutes);
 router.use("/payments", paymentRoutes);
 router.use("/wallets", walletRoutes);
