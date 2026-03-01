@@ -43,7 +43,7 @@ const Login = () => {
       <Card className="w-full max-w-sm shadow-xl rounded-2xl">
         <CardContent className="p-6">
           <TypographyH3 className="mb-6 text-center text-[var(--main-color)]">
-            AUTO TAXI
+            Fortune Plus
           </TypographyH3>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
@@ -86,7 +86,7 @@ const Login = () => {
             {errorMessage && (
               <div className="text-red-500 text-sm mt-2">{errorMessage}</div>
             )}
-            <Button type="submit" variant="warning" className="w-full mt-4">
+            <Button type="submit" variant="info" className="w-full mt-4">
               Sign In
             </Button>
           </form>
