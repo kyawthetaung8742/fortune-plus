@@ -38,6 +38,7 @@ const TransactionHistoryPage = () => {
     from: "",
     to: "",
     shareholder_id: "",
+    transaction_type: "",
   });
   const [shareholders, setShareholders] = useState<Shareholder[]>([]);
 
@@ -61,6 +62,7 @@ const TransactionHistoryPage = () => {
       if (queryParams.from) params.from = queryParams.from;
       if (queryParams.to) params.to = queryParams.to;
       if (queryParams.shareholder_id) params.shareholder_id = queryParams.shareholder_id;
+      if (queryParams.transaction_type) params.transaction_type = queryParams.transaction_type;
 
       const res = await transactionHistoryApi.list(params);
       if (res.data.success && res.data.data) {
@@ -83,6 +85,7 @@ const TransactionHistoryPage = () => {
     queryParams.from,
     queryParams.to,
     queryParams.shareholder_id,
+    queryParams.transaction_type,
   ]);
 
   useEffect(() => {
@@ -100,10 +103,25 @@ const TransactionHistoryPage = () => {
       from: filterForm.from || undefined,
       to: filterForm.to || undefined,
       shareholder_id: filterForm.shareholder_id || undefined,
+      transaction_type: filterForm.transaction_type || undefined,
       page: 1,
       limit: prev.limit ?? 20,
     }));
   };
+
+  const transactionTypeOptions: { value: string; label: string }[] = [
+    { value: "", label: "All types" },
+    { value: "deposit", label: "Deposit" },
+    { value: "withdraw", label: "Withdraw" },
+    { value: "transfer", label: "Transfer" },
+    { value: "receive", label: "Receive" },
+    { value: "buy", label: "Buy" },
+    { value: "exchange_out", label: "Exchange Out" },
+    { value: "exchange_in", label: "Exchange In" },
+    { value: "expense", label: "Expense" },
+    { value: "expense_reversal", label: "Expense Reversal" },
+    { value: "product_sale", label: "Product Sale" },
+  ];
 
   const columns: ColumnDef<TransactionRow>[] = [
     {
@@ -229,6 +247,29 @@ const TransactionHistoryPage = () => {
             {shareholders.map((s) => (
               <option key={s._id} value={s._id}>
                 {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <Label htmlFor="filter-transaction_type">Transaction Type</Label>
+          <select
+            id="filter-transaction_type"
+            className={cn(
+              "mt-1 w-[180px] border rounded-md px-3 py-2 text-sm",
+              "bg-background"
+            )}
+            value={filterForm.transaction_type}
+            onChange={(e) =>
+              setFilterForm((prev) => ({
+                ...prev,
+                transaction_type: e.target.value,
+              }))
+            }
+          >
+            {transactionTypeOptions.map((opt) => (
+              <option key={opt.value || "all"} value={opt.value}>
+                {opt.label}
               </option>
             ))}
           </select>

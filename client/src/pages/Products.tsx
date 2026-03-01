@@ -44,6 +44,8 @@ const Products = () => {
     sale_price: "",
     note: "",
   });
+  const [createImageFile, setCreateImageFile] = useState<File | null>(null);
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
 
   const fetchProducts = async () => {
     try {
@@ -90,6 +92,7 @@ const Products = () => {
       sale_price: String(row.sale_price),
       note: row.note ?? "",
     });
+    setEditImageFile(null);
     setEditOpen(true);
   };
 
@@ -110,15 +113,15 @@ const Products = () => {
       return;
     }
     try {
-      await productApi.create({
-        category_id: createForm.category_id,
-        name: createForm.name,
-        quantity,
-        image: createForm.image || undefined,
-        purchase_price,
-        sale_price,
-        note: createForm.note || undefined,
-      });
+      const formData = new FormData();
+      formData.append("category_id", createForm.category_id);
+      formData.append("name", createForm.name);
+      formData.append("quantity", String(quantity));
+      formData.append("purchase_price", String(purchase_price));
+      formData.append("sale_price", String(sale_price));
+      if (createForm.note) formData.append("note", createForm.note);
+      if (createImageFile) formData.append("image", createImageFile);
+      await productApi.create(formData);
       toast.success("Product created");
       setCreateOpen(false);
       setCreateForm({
@@ -130,6 +133,7 @@ const Products = () => {
         sale_price: "",
         note: "",
       });
+      setCreateImageFile(null);
       fetchProducts();
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string } } };
@@ -155,17 +159,18 @@ const Products = () => {
       return;
     }
     try {
-      await productApi.update(selectedProduct._id, {
-        category_id: editForm.category_id,
-        name: editForm.name,
-        quantity,
-        image: editForm.image || undefined,
-        purchase_price,
-        sale_price,
-        note: editForm.note || undefined,
-      });
+      const formData = new FormData();
+      formData.append("category_id", editForm.category_id);
+      formData.append("name", editForm.name);
+      formData.append("quantity", String(quantity));
+      formData.append("purchase_price", String(purchase_price));
+      formData.append("sale_price", String(sale_price));
+      if (editForm.note) formData.append("note", editForm.note);
+      if (editImageFile) formData.append("image", editImageFile);
+      await productApi.update(selectedProduct._id, formData);
       toast.success("Product updated");
       setEditOpen(false);
+      setEditImageFile(null);
       fetchProducts();
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string } } };
@@ -208,6 +213,7 @@ const Products = () => {
               sale_price: "",
               note: "",
             });
+            setCreateImageFile(null);
             setCreateOpen(true);
           }}
         >
@@ -271,16 +277,44 @@ const Products = () => {
               />
             </div>
             <div>
-              <Label htmlFor="create-image">Image URL</Label>
-              <Input
-                id="create-image"
-                value={createForm.image}
-                onChange={(e) =>
-                  setCreateForm((f) => ({ ...f, image: e.target.value }))
-                }
-                placeholder="https://..."
-                className="mt-1"
-              />
+              <Label>Image</Label>
+              <div className="mt-1 space-y-2">
+                <Input
+                  id="create-image"
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    setCreateImageFile(file || null);
+                    e.target.value = "";
+                  }}
+                  className="cursor-pointer"
+                />
+                {(createImageFile || createForm.image) && (
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={
+                        createImageFile
+                          ? URL.createObjectURL(createImageFile)
+                          : createForm.image
+                      }
+                      alt="Preview"
+                      className="h-20 w-20 object-cover rounded border"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCreateImageFile(null);
+                        setCreateForm((f) => ({ ...f, image: "" }));
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <Label htmlFor="create-purchase_price">Purchase Price</Label>
@@ -383,15 +417,44 @@ const Products = () => {
               />
             </div>
             <div>
-              <Label htmlFor="edit-image">Image URL</Label>
-              <Input
-                id="edit-image"
-                value={editForm.image}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, image: e.target.value }))
-                }
-                className="mt-1"
-              />
+              <Label>Image</Label>
+              <div className="mt-1 space-y-2">
+                <Input
+                  id="edit-image"
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    setEditImageFile(file || null);
+                    e.target.value = "";
+                  }}
+                  className="cursor-pointer"
+                />
+                {(editImageFile || editForm.image) && (
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={
+                        editImageFile
+                          ? URL.createObjectURL(editImageFile)
+                          : editForm.image
+                      }
+                      alt="Preview"
+                      className="h-20 w-20 object-cover rounded border"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditImageFile(null);
+                        setEditForm((f) => ({ ...f, image: "" }));
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <Label htmlFor="edit-purchase_price">Purchase Price</Label>

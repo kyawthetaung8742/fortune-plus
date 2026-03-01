@@ -1,6 +1,6 @@
+import "dotenv/config";
 import express from "express";
 import mongoose from "mongoose";
-import dotenv from "dotenv";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
@@ -9,8 +9,6 @@ import morgan from "morgan";
 import authRoutes from "./routes/auth.routes.js";
 import apiRoutes from "./routes/index.js";
 import authMiddleware from "./middleware/auth.middleware.js";
-
-dotenv.config();
 const app = express();
 
 // Security

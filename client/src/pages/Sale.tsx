@@ -286,38 +286,36 @@ const Sale = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
           {filteredProducts.map((product) => (
             <Card
               key={product._id}
-              className="cursor-pointer hover:border-primary/50 transition-colors overflow-hidden"
+              className="cursor-pointer hover:border-primary/50 transition-colors overflow-hidden py-0"
               onClick={() => addToCart(product)}
             >
-              <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
+              <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden relative">
                 {product.image ? (
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="w-full h-full object-cover"
+                    className="w-full object-cover"
                   />
                 ) : (
                   <span className="text-muted-foreground text-4xl">📦</span>
                 )}
-              </div>
-              <CardContent className="p-3">
                 <p
-                  className="font-medium text-sm truncate"
+                  className="absolute bottom-0 w-full bg-[#092b5d] text-white text-center px-2 py-0 text-md"
                   title={product.name}
                 >
                   {product.name}
                 </p>
-                <p className="text-primary font-semibold">
-                  {product.sale_price.toLocaleString()}
+                <p className="absolute top-0 right-0 px-2 py-0 text-sm bg-blue-500 text-white rounded-md">
+                  Qty: {product.quantity.toLocaleString()}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  Stock: {product.quantity}
+                <p className="absolute top-0 left-0 px-2 py-0 text-sm bg-red-500 text-white rounded-md">
+                  {product.sale_price.toLocaleString()} Baht
                 </p>
-              </CardContent>
+              </div>
             </Card>
           ))}
         </div>

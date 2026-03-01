@@ -6,8 +6,8 @@ export const productApi = {
     API.get<{ success: boolean; data: Product[] }>("/products", { params }),
   getById: (id: string) =>
     API.get<{ success: boolean; data: Product }>(`/products/${id}`),
-  create: (data: Partial<Product>) =>
+  create: (data: FormData) =>
     API.post<{ success: boolean; data: Product }>("/products", data),
-  update: (id: string, data: Partial<Product>) =>
+  update: (id: string, data: FormData) =>
     API.put<{ success: boolean; data: Product }>(`/products/${id}`, data),
 };
