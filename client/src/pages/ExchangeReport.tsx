@@ -22,13 +22,15 @@ type PopulatedShareholder = {
   email?: string;
 };
 type PopulatedPayment = { _id: string; name?: string; currency_type?: string };
+type PopulatedUser = { _id: string; name?: string };
 
 type TransactionRow = Omit<
   TransactionHistory,
-  "shareholder_id" | "payment_id"
+  "shareholder_id" | "payment_id" | "created_by"
 > & {
   shareholder_id: string | PopulatedShareholder;
   payment_id: string | PopulatedPayment;
+  created_by?: string | PopulatedUser;
 };
 
 const cardClassName = "bg-[#1f3069] text-white border-[#1e3a5f]";
@@ -172,6 +174,15 @@ const ExchangeReport = () => {
       cell: ({ row }) => Number(row.original.amount).toLocaleString(),
     },
     { accessorKey: "note", header: "Note" },
+    {
+      id: "created_by",
+      header: "Created By",
+      cell: ({ row }) => {
+        const cb = row.original.created_by;
+        if (typeof cb === "object" && cb && "name" in cb) return (cb as PopulatedUser).name ?? "—";
+        return cb ? String(cb) : "—";
+      },
+    },
   ];
 
   const exchangeOutEntries = Object.entries(summary.exchange_out).filter(

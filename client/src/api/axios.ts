@@ -1,7 +1,12 @@
 import axios from "axios";
 
+const baseURL = import.meta.env.VITE_API_BASE_URL
+  ? `${import.meta.env.VITE_API_BASE_URL}/api`
+  : "/api";
+
 const API = axios.create({
-  baseURL: `${import.meta.env.VITE_API_BASE_URL}/api`,
+  baseURL,
+  timeout: 30000,
 });
 
 // Axios request interceptor to add Authorization header

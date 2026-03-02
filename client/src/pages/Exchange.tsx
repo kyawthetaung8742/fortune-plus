@@ -14,7 +14,9 @@ const Exchange = () => {
   const navigate = useNavigate();
   const [shareholders, setShareholders] = useState<Shareholder[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [exchangeRates, setExchangeRates] = useState<{ type: string; rate: number }[]>([]);
+  const [exchangeRates, setExchangeRates] = useState<
+    { type: string; rate: number }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   type ExchangeDirection = "kyat_to_baht" | "baht_to_kyat";
 
@@ -31,13 +33,15 @@ const Exchange = () => {
   });
 
   const kyatPayments = payments.filter(
-    (p) => (p.currency_type || "").toLowerCase() === "kyat"
+    (p) => (p.currency_type || "").toLowerCase() === "kyat",
   );
   const bahtPayments = payments.filter(
-    (p) => (p.currency_type || "").toLowerCase() === "baht"
+    (p) => (p.currency_type || "").toLowerCase() === "baht",
   );
-  const fromPayments = form.direction === "kyat_to_baht" ? kyatPayments : bahtPayments;
-  const toPayments = form.direction === "kyat_to_baht" ? bahtPayments : kyatPayments;
+  const fromPayments =
+    form.direction === "kyat_to_baht" ? kyatPayments : bahtPayments;
+  const toPayments =
+    form.direction === "kyat_to_baht" ? bahtPayments : kyatPayments;
 
   const fromAmountNum = parseFloat(form.from_amount);
   const bahtRateNum = parseFloat(form.rate);
@@ -48,13 +52,17 @@ const Exchange = () => {
         ? fromAmountNum / bahtRateNum
         : fromAmountNum * bahtRateNum
       : null;
-  const toCurrencyLabel = form.direction === "kyat_to_baht" ? "Baht" : "Kyat";
+  // Kyat to Baht = we Receive Kyat, Transfer Baht (and vice versa for Baht to Kyat)
+  const receiveCurrencyLabel = form.direction === "kyat_to_baht" ? "Kyat" : "Baht";
+  const transferCurrencyLabel = form.direction === "kyat_to_baht" ? "Baht" : "Kyat";
 
   useEffect(() => {
     if (calculatedToAmount != null) {
       setForm((f) => ({
         ...f,
-        receive_amount: calculatedToAmount.toLocaleString(undefined, { maximumFractionDigits: 4 }),
+        receive_amount: calculatedToAmount.toLocaleString(undefined, {
+          maximumFractionDigits: 4,
+        }),
       }));
     } else {
       setForm((f) => ({ ...f, receive_amount: "" }));
@@ -69,10 +77,13 @@ const Exchange = () => {
           paymentApi.list(),
           exchangeRateApi.list(),
         ]);
-        if (shRes.data.success && shRes.data.data) setShareholders(shRes.data.data);
+        if (shRes.data.success && shRes.data.data)
+          setShareholders(shRes.data.data);
         if (pRes.data.success && pRes.data.data) setPayments(pRes.data.data);
         if (rateRes.data.success && rateRes.data.data)
-          setExchangeRates(rateRes.data.data.map((r) => ({ type: r.type, rate: r.rate })));
+          setExchangeRates(
+            rateRes.data.data.map((r) => ({ type: r.type, rate: r.rate })),
+          );
       } catch (e: unknown) {
         const err = e as { response?: { data?: { message?: string } } };
         toast.error(err.response?.data?.message || "Failed to load data");
@@ -102,26 +113,38 @@ const Exchange = () => {
       !form.from_amount ||
       !form.receive_amount
     ) {
-      toast.error("Select from/to shareholder, from/to payment, and enter amount and receive amount");
+      toast.error(
+        "Select Receive and Transfer shareholder/payment, and enter transfer and receive amount",
+      );
       return;
     }
     if (form.from_payment_id === form.to_payment_id) {
-      toast.error("From and to payment must be different (e.g. Kyat ↔ Baht)");
+      toast.error("Receive and Transfer payment must be different (e.g. Kyat ↔ Baht)");
       return;
     }
-    const fromAmount = parseFloat(form.from_amount);
-    const receiveAmount = parseFloat(String(form.receive_amount).replace(/,/g, ""));
-    if (isNaN(fromAmount) || fromAmount <= 0 || isNaN(receiveAmount) || receiveAmount <= 0) {
-      toast.error("Enter valid amount and receive amount");
+    // form.from_amount = Receive amount (we receive from customer), form.receive_amount = Transfer amount (we give to customer)
+    const receiveAmount = parseFloat(form.from_amount);
+    const transferAmount = parseFloat(
+      String(form.receive_amount).replace(/,/g, ""),
+    );
+    if (
+      isNaN(receiveAmount) ||
+      receiveAmount <= 0 ||
+      isNaN(transferAmount) ||
+      transferAmount <= 0
+    ) {
+      toast.error("Enter valid receive amount and transfer amount");
       return;
     }
-    const apiRate = fromAmount / receiveAmount;
+    // Backend: from_amount = we deduct (Transfer), to_amount = we add (Receive). rate = from_amount / to_amount
+    const apiRate = transferAmount / receiveAmount;
     try {
-      const res = await shareholderApi.exchange(form.shareholder_id, {
-        from_payment_id: form.from_payment_id,
-        to_payment_id: form.to_payment_id,
-        to_shareholder_id: form.to_shareholder_id || undefined,
-        from_amount: fromAmount,
+      // Backend: from = Transfer (deduct), to = Receive (add)
+      const res = await shareholderApi.exchange(form.to_shareholder_id, {
+        from_payment_id: form.to_payment_id,
+        to_payment_id: form.from_payment_id,
+        to_shareholder_id: form.shareholder_id,
+        from_amount: transferAmount,
         rate: apiRate,
         note: form.note || undefined,
       });
@@ -129,7 +152,7 @@ const Exchange = () => {
       toast.success(
         toAmount != null
           ? `Exchange completed. Received ${Number(toAmount).toLocaleString()}`
-          : "Exchange completed"
+          : "Exchange completed",
       );
       setForm((f) => ({
         ...f,
@@ -155,7 +178,9 @@ const Exchange = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-semibold">Currency Exchange (Myanmar Kyat ↔ Thai Baht)</h1>
+      <h1 className="text-2xl font-semibold">
+        Currency Exchange (Myanmar Kyat ↔ Thai Baht)
+      </h1>
 
       <Card className="max-w-lg">
         <CardHeader>
@@ -203,7 +228,7 @@ const Exchange = () => {
               </div>
             </div>
             <div>
-              <Label>From Shareholder</Label>
+              <Label>Receive - Shareholder</Label>
               <select
                 value={form.shareholder_id}
                 onChange={(e) => {
@@ -226,7 +251,7 @@ const Exchange = () => {
               </select>
             </div>
             <div>
-              <Label>From payment (currency to deduct)</Label>
+              <Label>Receive - Payment</Label>
               <select
                 value={form.from_payment_id}
                 onChange={(e) =>
@@ -240,7 +265,10 @@ const Exchange = () => {
                 className="w-full border rounded px-3 py-2 mt-1 text-sm"
                 required
               >
-                <option value="">— Select {form.direction === "kyat_to_baht" ? "Kyat" : "Baht"} payment —</option>
+                <option value="">
+                  — Select {form.direction === "kyat_to_baht" ? "Kyat" : "Baht"}{" "}
+                  payment (we receive) —
+                </option>
                 {fromPayments.map((p) => (
                   <option key={p._id} value={p._id}>
                     {p.name} ({p.currency_type})
@@ -249,7 +277,7 @@ const Exchange = () => {
               </select>
             </div>
             <div>
-              <Label>To Shareholder</Label>
+              <Label>Transfer - Shareholder</Label>
               <select
                 value={form.to_shareholder_id}
                 onChange={(e) =>
@@ -267,7 +295,7 @@ const Exchange = () => {
               </select>
             </div>
             <div>
-              <Label>To payment (currency to receive)</Label>
+              <Label>Transfer - Payment</Label>
               <select
                 value={form.to_payment_id}
                 onChange={(e) =>
@@ -275,13 +303,18 @@ const Exchange = () => {
                     ...f,
                     to_payment_id: e.target.value,
                     from_payment_id:
-                      e.target.value === f.from_payment_id ? "" : f.from_payment_id,
+                      e.target.value === f.from_payment_id
+                        ? ""
+                        : f.from_payment_id,
                   }))
                 }
                 className="w-full border rounded px-3 py-2 mt-1 text-sm"
                 required
               >
-                <option value="">— Select {form.direction === "kyat_to_baht" ? "Baht" : "Kyat"} payment —</option>
+                <option value="">
+                  — Select {form.direction === "kyat_to_baht" ? "Baht" : "Kyat"}{" "}
+                  payment (we transfer) —
+                </option>
                 {toPayments.map((p) => (
                   <option key={p._id} value={p._id}>
                     {p.name} ({p.currency_type})
@@ -290,7 +323,9 @@ const Exchange = () => {
               </select>
             </div>
             <div>
-              <Label htmlFor="exchange-from-amount">Amount (from currency)</Label>
+              <Label htmlFor="exchange-from-amount">
+                Receive Amount ({receiveCurrencyLabel}) — from customer
+              </Label>
               <Input
                 id="exchange-from-amount"
                 type="number"
@@ -306,9 +341,7 @@ const Exchange = () => {
               />
             </div>
             <div>
-              <Label htmlFor="exchange-rate">
-                1 Baht = ? Kyat
-              </Label>
+              <Label htmlFor="exchange-rate">1 Baht = ? Kyat</Label>
               <Input
                 id="exchange-rate"
                 type="number"
@@ -328,7 +361,7 @@ const Exchange = () => {
             </div>
             <div>
               <Label htmlFor="exchange-receive-amount">
-                Receive amount ({toCurrencyLabel})
+                Transfer Amount ({transferCurrencyLabel}) — to customer
               </Label>
               <Input
                 id="exchange-receive-amount"
@@ -342,7 +375,7 @@ const Exchange = () => {
                 placeholder="0.00"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Calculated from amount and rate. You can edit this value.
+                Calculated from receive amount and rate (transfer to customer). You can edit.
               </p>
             </div>
             <div>

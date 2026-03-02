@@ -16,10 +16,12 @@ import { cn } from "@/lib/utils";
 
 type PopulatedShareholder = { _id: string; name?: string; phone?: string; email?: string };
 type PopulatedPayment = { _id: string; name?: string; currency_type?: string };
+type PopulatedUser = { _id: string; name?: string };
 
-type TransactionRow = Omit<TransactionHistory, "shareholder_id" | "payment_id"> & {
+type TransactionRow = Omit<TransactionHistory, "shareholder_id" | "payment_id" | "created_by"> & {
   shareholder_id: string | PopulatedShareholder;
   payment_id: string | PopulatedPayment;
+  created_by?: string | PopulatedUser;
 };
 
 const TransactionHistoryPage = () => {
@@ -179,6 +181,15 @@ const TransactionHistoryPage = () => {
     {
       accessorKey: "note",
       header: "Note",
+    },
+    {
+      id: "created_by",
+      header: "Created By",
+      cell: ({ row }) => {
+        const cb = row.original.created_by;
+        if (typeof cb === "object" && cb && "name" in cb) return (cb as PopulatedUser).name ?? "—";
+        return cb ? String(cb) : "—";
+      },
     },
   ];
 
