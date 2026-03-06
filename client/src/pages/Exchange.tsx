@@ -44,6 +44,9 @@ const Exchange = () => {
     form.direction === "kyat_to_baht" ? bahtPayments : kyatPayments;
 
   const fromAmountNum = parseFloat(form.from_amount);
+  const transferAmountNum = parseFloat(
+    String(form.receive_amount).replace(/,/g, ""),
+  );
   const bahtRateNum = parseFloat(form.rate);
   const isValidRate = !isNaN(bahtRateNum) && bahtRateNum > 0;
   const calculatedToAmount =
@@ -52,9 +55,18 @@ const Exchange = () => {
         ? fromAmountNum / bahtRateNum
         : fromAmountNum * bahtRateNum
       : null;
+  // When user enters Transfer amount → calculated Receive amount (for display below transfer input)
+  const calculatedReceiveFromTransfer =
+    isValidRate && !isNaN(transferAmountNum) && transferAmountNum > 0
+      ? form.direction === "kyat_to_baht"
+        ? transferAmountNum * bahtRateNum
+        : transferAmountNum / bahtRateNum
+      : null;
   // Kyat to Baht = we Receive Kyat, Transfer Baht (and vice versa for Baht to Kyat)
-  const receiveCurrencyLabel = form.direction === "kyat_to_baht" ? "Kyat" : "Baht";
-  const transferCurrencyLabel = form.direction === "kyat_to_baht" ? "Baht" : "Kyat";
+  const receiveCurrencyLabel =
+    form.direction === "kyat_to_baht" ? "Kyat" : "Baht";
+  const transferCurrencyLabel =
+    form.direction === "kyat_to_baht" ? "Baht" : "Kyat";
 
   useEffect(() => {
     if (calculatedToAmount != null) {
@@ -110,30 +122,46 @@ const Exchange = () => {
       !form.from_payment_id ||
       !form.to_shareholder_id ||
       !form.to_payment_id ||
-      !form.from_amount ||
       !form.receive_amount
     ) {
       toast.error(
-        "Select Receive and Transfer shareholder/payment, and enter transfer and receive amount",
+        "Select Receive and Transfer shareholder/payment, and enter at least transfer amount (or both amounts)",
       );
       return;
     }
     if (form.from_payment_id === form.to_payment_id) {
-      toast.error("Receive and Transfer payment must be different (e.g. Kyat ↔ Baht)");
+      toast.error(
+        "Receive and Transfer payment must be different (e.g. Kyat ↔ Baht)",
+      );
       return;
     }
     // form.from_amount = Receive amount (we receive from customer), form.receive_amount = Transfer amount (we give to customer)
-    const receiveAmount = parseFloat(form.from_amount);
     const transferAmount = parseFloat(
       String(form.receive_amount).replace(/,/g, ""),
     );
+    let receiveAmount = parseFloat(form.from_amount);
+    // If user entered only Transfer amount, use calculated receive amount
+    if (isNaN(receiveAmount) || receiveAmount <= 0) {
+      const rateNum = parseFloat(form.rate);
+      if (
+        !isNaN(rateNum) &&
+        rateNum > 0 &&
+        !isNaN(transferAmount) &&
+        transferAmount > 0
+      ) {
+        receiveAmount =
+          form.direction === "kyat_to_baht"
+            ? transferAmount * rateNum
+            : transferAmount / rateNum;
+      }
+    }
     if (
       isNaN(receiveAmount) ||
       receiveAmount <= 0 ||
       isNaN(transferAmount) ||
       transferAmount <= 0
     ) {
-      toast.error("Enter valid receive amount and transfer amount");
+      toast.error("Enter valid receive amount and/or transfer amount");
       return;
     }
     // Backend: from_amount = we deduct (Transfer), to_amount = we add (Receive). rate = from_amount / to_amount
@@ -374,8 +402,20 @@ const Exchange = () => {
                 className="mt-1"
                 placeholder="0.00"
               />
+              {calculatedReceiveFromTransfer != null && (
+                <p className="text-sm font-medium mt-2 text-muted-foreground">
+                  Receive amount:{" "}
+                  <span className="text-foreground">
+                    {calculatedReceiveFromTransfer.toLocaleString(undefined, {
+                      maximumFractionDigits: 4,
+                    })}{" "}
+                    {receiveCurrencyLabel}
+                  </span>
+                </p>
+              )}
               <p className="text-xs text-muted-foreground mt-1">
-                Calculated from receive amount and rate (transfer to customer). You can edit.
+                Enter receive or transfer amount; the other is calculated from
+                rate.
               </p>
             </div>
             <div>

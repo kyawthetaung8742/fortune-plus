@@ -219,11 +219,6 @@ export const transfer = async (req, res) => {
     const note = req.body.note || "";
     const createdBy = req.user._id;
 
-    if (fromShareholderId.equals(toShareholderId))
-      return res
-        .status(400)
-        .json({ message: "Cannot transfer to same shareholder" });
-
     if (!toPaymentId.equals(fromPaymentId)) {
       const fromPayment = await Payment.findById(fromPaymentId).lean();
       const toPayment = await Payment.findById(toPaymentId).lean();

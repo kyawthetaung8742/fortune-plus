@@ -1,8 +1,16 @@
 import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { categoryApi } from "@/api/category";
 import { productApi } from "@/api/product";
 import { customerApi } from "@/api/customer";
@@ -40,6 +48,14 @@ const Sale = () => {
   const [shareholders, setShareholders] = useState<Shareholder[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [newCustomerOpen, setNewCustomerOpen] = useState(false);
+  const [newCustomerSubmitting, setNewCustomerSubmitting] = useState(false);
+  const [newCustomerForm, setNewCustomerForm] = useState({
+    name: "",
+    phone: "",
+    address: "",
+    note: "",
+  });
 
   const paymentsByCurrency = useMemo(
     () => payments.filter((p) => p.currency_type === currencyType),
@@ -253,6 +269,35 @@ const Sale = () => {
     }
   };
 
+  const handleNewCustomerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCustomerForm.name.trim()) {
+      toast.error("Customer name is required");
+      return;
+    }
+    setNewCustomerSubmitting(true);
+    try {
+      const res = await customerApi.create({
+        name: newCustomerForm.name.trim(),
+        phone: newCustomerForm.phone.trim() || undefined,
+        address: newCustomerForm.address.trim() || undefined,
+        note: newCustomerForm.note.trim() || undefined,
+      });
+      if (res.data.success && res.data.data) {
+        await fetchCustomers();
+        setCustomerId(res.data.data._id);
+        setNewCustomerOpen(false);
+        setNewCustomerForm({ name: "", phone: "", address: "", note: "" });
+        toast.success("Customer created and selected");
+      }
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      toast.error(e.response?.data?.message || "Failed to create customer");
+    } finally {
+      setNewCustomerSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -414,7 +459,17 @@ const Sale = () => {
                   )}
                 </p>
                 <div>
-                  <Label>Customer</Label>
+                  <div className="flex items-center justify-between gap-2 mt-1">
+                    <Label className="mb-0">Customer</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setNewCustomerOpen(true)}
+                    >
+                      New customer
+                    </Button>
+                  </div>
                   <select
                     value={customerId}
                     onChange={(e) => setCustomerId(e.target.value)}
@@ -431,6 +486,76 @@ const Sale = () => {
                     ))}
                   </select>
                 </div>
+                <Dialog open={newCustomerOpen} onOpenChange={setNewCustomerOpen}>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>New customer</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleNewCustomerSubmit} className="space-y-4">
+                      <div>
+                        <Label htmlFor="new-customer-name">Name</Label>
+                        <Input
+                          id="new-customer-name"
+                          value={newCustomerForm.name}
+                          onChange={(e) =>
+                            setNewCustomerForm((f) => ({ ...f, name: e.target.value }))
+                          }
+                          required
+                          className="mt-1"
+                          placeholder="Customer name"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="new-customer-phone">Phone</Label>
+                        <Input
+                          id="new-customer-phone"
+                          value={newCustomerForm.phone}
+                          onChange={(e) =>
+                            setNewCustomerForm((f) => ({ ...f, phone: e.target.value }))
+                          }
+                          className="mt-1"
+                          placeholder="Phone"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="new-customer-address">Address</Label>
+                        <Input
+                          id="new-customer-address"
+                          value={newCustomerForm.address}
+                          onChange={(e) =>
+                            setNewCustomerForm((f) => ({ ...f, address: e.target.value }))
+                          }
+                          className="mt-1"
+                          placeholder="Address"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="new-customer-note">Note</Label>
+                        <Textarea
+                          id="new-customer-note"
+                          value={newCustomerForm.note}
+                          onChange={(e) =>
+                            setNewCustomerForm((f) => ({ ...f, note: e.target.value }))
+                          }
+                          className="mt-1 min-h-[80px]"
+                          placeholder="Note"
+                        />
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setNewCustomerOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={newCustomerSubmitting}>
+                          {newCustomerSubmitting ? "Creating..." : "Create"}
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
                 <div>
                   <Label>Currency type</Label>
                   <div className="flex gap-4 mt-2">

@@ -222,10 +222,6 @@ const Shareholders = () => {
       toast.error("Enter a valid amount");
       return;
     }
-    if (transferForm.to_shareholder_id === selectedShareholder._id) {
-      toast.error("Cannot transfer to same shareholder");
-      return;
-    }
     try {
       await shareholderApi.transfer(selectedShareholder._id, {
         payment_id: transferForm.payment_id,
@@ -618,13 +614,11 @@ const Shareholders = () => {
                 required
               >
                 <option value="">— Select shareholder —</option>
-                {shareholders
-                  .filter((s) => s._id !== selectedShareholder?._id)
-                  .map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.name}
-                    </option>
-                  ))}
+                {shareholders.map((s) => (
+                  <option key={s._id} value={s._id}>
+                    {s.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -632,7 +626,10 @@ const Shareholders = () => {
               <select
                 value={transferForm.to_payment_id}
                 onChange={(e) =>
-                  setTransferForm((f) => ({ ...f, to_payment_id: e.target.value }))
+                  setTransferForm((f) => ({
+                    ...f,
+                    to_payment_id: e.target.value,
+                  }))
                 }
                 className="w-full border rounded px-3 py-2 mt-1 text-sm"
                 required
@@ -641,13 +638,20 @@ const Shareholders = () => {
                 <option value="">— Select payment —</option>
                 {(() => {
                   const fromPayment = payments.find(
-                    (p) => p._id === transferForm.payment_id
+                    (p) => p._id === transferForm.payment_id,
                   );
-                  const currencyType = (fromPayment?.currency_type || "").toLowerCase();
+                  const currencyType = (
+                    fromPayment?.currency_type || ""
+                  ).toLowerCase();
                   if (!currencyType) return null;
+                  const isSameShareholder =
+                    selectedShareholder &&
+                    transferForm.to_shareholder_id === selectedShareholder._id;
                   return payments
                     .filter(
-                      (p) => (p.currency_type || "").toLowerCase() === currencyType
+                      (p) =>
+                        (p.currency_type || "").toLowerCase() === currencyType &&
+                        (!isSameShareholder || p._id !== transferForm.payment_id),
                     )
                     .map((p) => (
                       <option key={p._id} value={p._id}>
@@ -657,7 +661,8 @@ const Shareholders = () => {
                 })()}
               </select>
               <p className="text-xs text-muted-foreground mt-1">
-                Choose which payment/wallet the recipient receives into (same currency type).
+                Choose which payment/wallet the recipient receives into (same
+                currency type).
               </p>
             </div>
             <div>
