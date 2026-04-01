@@ -6,9 +6,8 @@ import User from "../models/User.js";
 dotenv.config();
 
 const users = [
-  { name: "Kyaw Thet Aung", username: "kyawthetaung", password: "password123" },
-  { name: "Aung Aung", username: "aungaung", password: "password123" },
-  { name: "Cho Cho", username: "chocho", password: "password123" },
+  { name: "Kyaw Thet Aung", username: "kyawthetaung", password: "kta@12345" },
+  { name: "Cho Cho", username: "chocho", password: "cc@12345" },
 ];
 
 async function seedUsers() {
@@ -21,7 +20,7 @@ async function seedUsers() {
         name: u.name,
         username: u.username,
         password: await bcrypt.hash(u.password, 12),
-      }))
+      })),
     );
 
     await User.deleteMany({});
