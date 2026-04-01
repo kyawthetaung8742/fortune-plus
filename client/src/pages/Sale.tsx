@@ -25,6 +25,7 @@ import type { Shareholder } from "@/types/app";
 import type { Payment } from "@/types/app";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PaymentSelect } from "@/components/shared/PaymentSelect";
 
 type CartItem = {
   product: Product;
@@ -626,22 +627,18 @@ const Sale = () => {
                   </select>
                 </div>
                 <div>
-                  <Label>Payment</Label>
-                  <select
-                    value={paymentId}
-                    onChange={(e) => setPaymentId(e.target.value)}
-                    className={cn(
-                      "w-full border rounded-md px-3 py-2 mt-1 text-sm",
-                      "bg-background",
-                    )}
-                  >
-                    <option value="">Select payment</option>
-                    {paymentsByCurrency.map((p) => (
-                      <option key={p._id} value={p._id}>
-                        {p.name} ({p.currency_type})
-                      </option>
-                    ))}
-                  </select>
+                  <Label htmlFor="sale-payment">Payment</Label>
+                  <div className="mt-1">
+                    <PaymentSelect
+                      id="sale-payment"
+                      value={paymentId}
+                      onChange={setPaymentId}
+                      payments={paymentsByCurrency}
+                      allowEmpty
+                      emptyLabel="Select payment"
+                      placeholder="Select payment"
+                    />
+                  </div>
                 </div>
                 <Button
                   className="w-full"

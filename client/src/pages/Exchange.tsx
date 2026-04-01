@@ -9,6 +9,8 @@ import { paymentApi } from "@/api/payment";
 import { exchangeRateApi } from "@/api/exchangeRate";
 import type { Shareholder, Payment } from "@/types/app";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { PaymentSelect } from "@/components/shared/PaymentSelect";
 
 const Exchange = () => {
   const navigate = useNavigate();
@@ -47,6 +49,13 @@ const Exchange = () => {
   const transferAmountNum = parseFloat(
     String(form.receive_amount).replace(/,/g, ""),
   );
+  const transferRaw = String(form.receive_amount).replace(/,/g, "").trim();
+  const transferParsed = parseFloat(transferRaw);
+  const transferAmountDecimalError =
+    transferRaw !== "" &&
+    !isNaN(transferParsed) &&
+    transferParsed >= 0 &&
+    !Number.isInteger(transferParsed);
   const bahtRateNum = parseFloat(form.rate);
   const isValidRate = !isNaN(bahtRateNum) && bahtRateNum > 0;
   const calculatedToAmount =
@@ -57,7 +66,10 @@ const Exchange = () => {
       : null;
   // When user enters Transfer amount → calculated Receive amount (for display below transfer input)
   const calculatedReceiveFromTransfer =
-    isValidRate && !isNaN(transferAmountNum) && transferAmountNum > 0
+    isValidRate &&
+    !isNaN(transferAmountNum) &&
+    transferAmountNum > 0 &&
+    !transferAmountDecimalError
       ? form.direction === "kyat_to_baht"
         ? transferAmountNum * bahtRateNum
         : transferAmountNum / bahtRateNum
@@ -72,9 +84,7 @@ const Exchange = () => {
     if (calculatedToAmount != null) {
       setForm((f) => ({
         ...f,
-        receive_amount: calculatedToAmount.toLocaleString(undefined, {
-          maximumFractionDigits: 4,
-        }),
+        receive_amount: String(Math.round(calculatedToAmount)),
       }));
     } else {
       setForm((f) => ({ ...f, receive_amount: "" }));
@@ -133,6 +143,17 @@ const Exchange = () => {
       toast.error(
         "Receive and Transfer payment must be different (e.g. Kyat ↔ Baht)",
       );
+      return;
+    }
+    const transferCheckRaw = String(form.receive_amount).replace(/,/g, "").trim();
+    const transferCheckNum = parseFloat(transferCheckRaw);
+    if (
+      transferCheckRaw !== "" &&
+      !isNaN(transferCheckNum) &&
+      transferCheckNum >= 0 &&
+      !Number.isInteger(transferCheckNum)
+    ) {
+      toast.error("Transfer amount must be a whole number (no decimals)");
       return;
     }
     // form.from_amount = Receive amount (we receive from customer), form.receive_amount = Transfer amount (we give to customer)
@@ -279,30 +300,22 @@ const Exchange = () => {
               </select>
             </div>
             <div>
-              <Label>Receive - Payment</Label>
-              <select
-                value={form.from_payment_id}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    from_payment_id: e.target.value,
-                    to_payment_id:
-                      e.target.value === f.to_payment_id ? "" : f.to_payment_id,
-                  }))
-                }
-                className="w-full border rounded px-3 py-2 mt-1 text-sm"
-                required
-              >
-                <option value="">
-                  — Select {form.direction === "kyat_to_baht" ? "Kyat" : "Baht"}{" "}
-                  payment (we receive) —
-                </option>
-                {fromPayments.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.name} ({p.currency_type})
-                  </option>
-                ))}
-              </select>
+              <Label htmlFor="exchange-receive-payment">Receive - Payment</Label>
+              <div className="mt-1">
+                <PaymentSelect
+                  id="exchange-receive-payment"
+                  value={form.from_payment_id}
+                  onChange={(id) =>
+                    setForm((f) => ({
+                      ...f,
+                      from_payment_id: id,
+                      to_payment_id: id === f.to_payment_id ? "" : f.to_payment_id,
+                    }))
+                  }
+                  payments={fromPayments}
+                  placeholder={`— Select ${form.direction === "kyat_to_baht" ? "Kyat" : "Baht"} payment (we receive) —`}
+                />
+              </div>
             </div>
             <div>
               <Label>Transfer - Shareholder</Label>
@@ -323,32 +336,23 @@ const Exchange = () => {
               </select>
             </div>
             <div>
-              <Label>Transfer - Payment</Label>
-              <select
-                value={form.to_payment_id}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    to_payment_id: e.target.value,
-                    from_payment_id:
-                      e.target.value === f.from_payment_id
-                        ? ""
-                        : f.from_payment_id,
-                  }))
-                }
-                className="w-full border rounded px-3 py-2 mt-1 text-sm"
-                required
-              >
-                <option value="">
-                  — Select {form.direction === "kyat_to_baht" ? "Baht" : "Kyat"}{" "}
-                  payment (we transfer) —
-                </option>
-                {toPayments.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.name} ({p.currency_type})
-                  </option>
-                ))}
-              </select>
+              <Label htmlFor="exchange-transfer-payment">Transfer - Payment</Label>
+              <div className="mt-1">
+                <PaymentSelect
+                  id="exchange-transfer-payment"
+                  value={form.to_payment_id}
+                  onChange={(id) =>
+                    setForm((f) => ({
+                      ...f,
+                      to_payment_id: id,
+                      from_payment_id:
+                        id === f.from_payment_id ? "" : f.from_payment_id,
+                    }))
+                  }
+                  payments={toPayments}
+                  placeholder={`— Select ${form.direction === "kyat_to_baht" ? "Baht" : "Kyat"} payment (we transfer) —`}
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="exchange-from-amount">
@@ -394,14 +398,23 @@ const Exchange = () => {
               <Input
                 id="exchange-receive-amount"
                 type="text"
-                inputMode="decimal"
+                inputMode="numeric"
                 value={form.receive_amount}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, receive_amount: e.target.value }))
                 }
-                className="mt-1"
-                placeholder="0.00"
+                className={cn(
+                  "mt-1",
+                  transferAmountDecimalError && "border-destructive",
+                )}
+                aria-invalid={transferAmountDecimalError}
+                placeholder="0"
               />
+              {transferAmountDecimalError && (
+                <p className="text-sm text-destructive mt-1" role="alert">
+                  Transfer amount must be a whole number (no decimals).
+                </p>
+              )}
               {calculatedReceiveFromTransfer != null && (
                 <p className="text-sm font-medium mt-2 text-muted-foreground">
                   Receive amount:{" "}
@@ -429,7 +442,9 @@ const Exchange = () => {
                 className="mt-1"
               />
             </div>
-            <Button type="submit">Exchange</Button>
+            <Button type="submit" disabled={transferAmountDecimalError}>
+              Exchange
+            </Button>
           </form>
         </CardContent>
       </Card>

@@ -5,13 +5,20 @@ export type WalletSummaryByPayment = {
   payment_id: string;
   paymentName: string;
   currency_type: string;
+  logo_url?: string;
   totalAmount: number;
 };
 
 export type WalletSummaryShareholder = {
   shareholder_id: string;
   shareholderName: string;
-  wallets: { payment_id: string; paymentName: string; currency_type: string; amount: number }[];
+  wallets: {
+    payment_id: string;
+    paymentName: string;
+    currency_type: string;
+    logo_url?: string;
+    amount: number;
+  }[];
   depositByCurrency?: Record<string, number>;
   withdrawByCurrency?: Record<string, number>;
 };

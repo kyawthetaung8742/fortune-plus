@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,7 @@ import { shareholderApi } from "@/api/shareholder";
 import { paymentApi } from "@/api/payment";
 import type { Shareholder, Payment } from "@/types/app";
 import { toast } from "sonner";
+import { PaymentSelect } from "@/components/shared/PaymentSelect";
 
 const Shareholders = () => {
   const [shareholders, setShareholders] = useState<Shareholder[]>([]);
@@ -277,6 +278,25 @@ const Shareholders = () => {
     },
   ];
 
+  const transferToPayments = useMemo(() => {
+    const fromPayment = payments.find((p) => p._id === transferForm.payment_id);
+    const currencyType = (fromPayment?.currency_type || "").toLowerCase();
+    if (!currencyType) return [];
+    const isSameShareholder =
+      selectedShareholder &&
+      transferForm.to_shareholder_id === selectedShareholder._id;
+    return payments.filter(
+      (p) =>
+        (p.currency_type || "").toLowerCase() === currencyType &&
+        (!isSameShareholder || p._id !== transferForm.payment_id),
+    );
+  }, [
+    payments,
+    transferForm.payment_id,
+    transferForm.to_shareholder_id,
+    selectedShareholder,
+  ]);
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -442,22 +462,20 @@ const Shareholders = () => {
           </DialogHeader>
           <form onSubmit={handleDepositSubmit} className="space-y-4">
             <div>
-              <Label>Payment (currency)</Label>
-              <select
-                value={amountForm.payment_id}
-                onChange={(e) =>
-                  setAmountForm((f) => ({ ...f, payment_id: e.target.value }))
-                }
-                className="w-full border rounded px-3 py-2 mt-1 text-sm"
-                required
-              >
-                <option value="">— Select payment —</option>
-                {payments.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.name} ({p.currency_type})
-                  </option>
-                ))}
-              </select>
+              <Label htmlFor="deposit-payment">Payment (currency)</Label>
+              <div className="mt-1">
+                <PaymentSelect
+                  id="deposit-payment"
+                  value={amountForm.payment_id}
+                  onChange={(id) =>
+                    setAmountForm((f) => ({ ...f, payment_id: id }))
+                  }
+                  payments={payments}
+                  allowEmpty
+                  emptyLabel="— Select payment —"
+                  placeholder="— Select payment —"
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="deposit-amount">Amount</Label>
@@ -510,22 +528,20 @@ const Shareholders = () => {
           </DialogHeader>
           <form onSubmit={handleWithdrawSubmit} className="space-y-4">
             <div>
-              <Label>Payment (currency)</Label>
-              <select
-                value={amountForm.payment_id}
-                onChange={(e) =>
-                  setAmountForm((f) => ({ ...f, payment_id: e.target.value }))
-                }
-                className="w-full border rounded px-3 py-2 mt-1 text-sm"
-                required
-              >
-                <option value="">— Select payment —</option>
-                {payments.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.name} ({p.currency_type})
-                  </option>
-                ))}
-              </select>
+              <Label htmlFor="withdraw-payment">Payment (currency)</Label>
+              <div className="mt-1">
+                <PaymentSelect
+                  id="withdraw-payment"
+                  value={amountForm.payment_id}
+                  onChange={(id) =>
+                    setAmountForm((f) => ({ ...f, payment_id: id }))
+                  }
+                  payments={payments}
+                  allowEmpty
+                  emptyLabel="— Select payment —"
+                  placeholder="— Select payment —"
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="withdraw-amount">Amount</Label>
@@ -578,26 +594,24 @@ const Shareholders = () => {
           </DialogHeader>
           <form onSubmit={handleTransferSubmit} className="space-y-4">
             <div>
-              <Label>Payment (currency)</Label>
-              <select
-                value={transferForm.payment_id}
-                onChange={(e) =>
-                  setTransferForm((f) => ({
-                    ...f,
-                    payment_id: e.target.value,
-                    to_payment_id: "",
-                  }))
-                }
-                className="w-full border rounded px-3 py-2 mt-1 text-sm"
-                required
-              >
-                <option value="">— Select payment —</option>
-                {payments.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.name} ({p.currency_type})
-                  </option>
-                ))}
-              </select>
+              <Label htmlFor="transfer-from-payment">Payment (currency)</Label>
+              <div className="mt-1">
+                <PaymentSelect
+                  id="transfer-from-payment"
+                  value={transferForm.payment_id}
+                  onChange={(id) =>
+                    setTransferForm((f) => ({
+                      ...f,
+                      payment_id: id,
+                      to_payment_id: "",
+                    }))
+                  }
+                  payments={payments}
+                  allowEmpty
+                  emptyLabel="— Select payment —"
+                  placeholder="— Select payment —"
+                />
+              </div>
             </div>
             <div>
               <Label>Transfer to</Label>
@@ -622,44 +636,21 @@ const Shareholders = () => {
               </select>
             </div>
             <div>
-              <Label>To payment (same currency)</Label>
-              <select
-                value={transferForm.to_payment_id}
-                onChange={(e) =>
-                  setTransferForm((f) => ({
-                    ...f,
-                    to_payment_id: e.target.value,
-                  }))
-                }
-                className="w-full border rounded px-3 py-2 mt-1 text-sm"
-                required
-                disabled={!transferForm.payment_id}
-              >
-                <option value="">— Select payment —</option>
-                {(() => {
-                  const fromPayment = payments.find(
-                    (p) => p._id === transferForm.payment_id,
-                  );
-                  const currencyType = (
-                    fromPayment?.currency_type || ""
-                  ).toLowerCase();
-                  if (!currencyType) return null;
-                  const isSameShareholder =
-                    selectedShareholder &&
-                    transferForm.to_shareholder_id === selectedShareholder._id;
-                  return payments
-                    .filter(
-                      (p) =>
-                        (p.currency_type || "").toLowerCase() === currencyType &&
-                        (!isSameShareholder || p._id !== transferForm.payment_id),
-                    )
-                    .map((p) => (
-                      <option key={p._id} value={p._id}>
-                        {p.name} ({p.currency_type})
-                      </option>
-                    ));
-                })()}
-              </select>
+              <Label htmlFor="transfer-to-payment">To payment (same currency)</Label>
+              <div className="mt-1">
+                <PaymentSelect
+                  id="transfer-to-payment"
+                  value={transferForm.to_payment_id}
+                  onChange={(id) =>
+                    setTransferForm((f) => ({ ...f, to_payment_id: id }))
+                  }
+                  payments={transferToPayments}
+                  disabled={!transferForm.payment_id}
+                  allowEmpty
+                  emptyLabel="— Select payment —"
+                  placeholder="— Select payment —"
+                />
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Choose which payment/wallet the recipient receives into (same
                 currency type).

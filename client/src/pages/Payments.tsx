@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import DataTable from "@/components/shared/DataTable";
 import ActionDropdown from "@/components/shared/ActionDropdown";
 import { paymentApi } from "@/api/payment";
@@ -35,6 +36,11 @@ const Payments = () => {
     name: "",
     currency_type: "kyat" as Payment["currency_type"],
   });
+  const [createLogoFile, setCreateLogoFile] = useState<File | null>(null);
+  const [createLogoPreview, setCreateLogoPreview] = useState<string | null>(null);
+  const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
+  const [editLogoPreview, setEditLogoPreview] = useState<string | null>(null);
+  const [removeEditLogo, setRemoveEditLogo] = useState(false);
 
   const fetchPayments = async () => {
     try {
@@ -52,22 +58,46 @@ const Payments = () => {
     fetchPayments();
   }, []);
 
+  useEffect(() => {
+    if (!createLogoFile) {
+      setCreateLogoPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(createLogoFile);
+    setCreateLogoPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [createLogoFile]);
+
+  useEffect(() => {
+    if (!editLogoFile) {
+      setEditLogoPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(editLogoFile);
+    setEditLogoPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [editLogoFile]);
+
   const openEdit = (row: Payment) => {
     setSelectedPayment(row);
     setEditForm({ name: row.name, currency_type: row.currency_type });
+    setEditLogoFile(null);
+    setRemoveEditLogo(false);
     setEditOpen(true);
   };
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await paymentApi.create({
-        name: createForm.name,
-        currency_type: createForm.currency_type,
-      });
+      const fd = new FormData();
+      fd.append("name", createForm.name);
+      fd.append("currency_type", createForm.currency_type);
+      if (createLogoFile) fd.append("logo", createLogoFile);
+      await paymentApi.create(fd);
       toast.success("Payment created");
       setCreateOpen(false);
       setCreateForm({ name: "", currency_type: "kyat" });
+      setCreateLogoFile(null);
       fetchPayments();
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string } } };
@@ -79,12 +109,16 @@ const Payments = () => {
     e.preventDefault();
     if (!selectedPayment) return;
     try {
-      await paymentApi.update(selectedPayment._id, {
-        name: editForm.name,
-        currency_type: editForm.currency_type,
-      });
+      const fd = new FormData();
+      fd.append("name", editForm.name);
+      fd.append("currency_type", editForm.currency_type);
+      if (editLogoFile) fd.append("logo", editLogoFile);
+      else if (removeEditLogo) fd.append("clear_logo", "true");
+      await paymentApi.update(selectedPayment._id, fd);
       toast.success("Payment updated");
       setEditOpen(false);
+      setEditLogoFile(null);
+      setRemoveEditLogo(false);
       fetchPayments();
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string } } };
@@ -93,6 +127,20 @@ const Payments = () => {
   };
 
   const columns: ColumnDef<Payment>[] = [
+    {
+      id: "logo",
+      header: "Logo",
+      cell: ({ row }) =>
+        row.original.logo_url ? (
+          <img
+            src={row.original.logo_url}
+            alt=""
+            className="h-8 w-8 rounded object-contain bg-muted/50"
+          />
+        ) : (
+          <span className="text-muted-foreground text-sm">—</span>
+        ),
+    },
     { accessorKey: "name", header: "Name" },
     {
       accessorKey: "currency_type",
@@ -117,6 +165,7 @@ const Payments = () => {
         <Button
           onClick={() => {
             setCreateForm({ name: "", currency_type: "kyat" });
+            setCreateLogoFile(null);
             setCreateOpen(true);
           }}
         >
@@ -167,6 +216,29 @@ const Payments = () => {
                   </option>
                 ))}
               </select>
+            </div>
+            <div>
+              <Label htmlFor="create-logo">Bank logo (optional)</Label>
+              <Input
+                id="create-logo"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+                className="mt-1"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  setCreateLogoFile(f ?? null);
+                }}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                PNG, JPG, WebP, GIF, or SVG. Max 2MB on server.
+              </p>
+              {createLogoPreview && (
+                <img
+                  src={createLogoPreview}
+                  alt="Preview"
+                  className="mt-2 h-16 w-16 rounded object-contain border bg-muted/30"
+                />
+              )}
             </div>
             <DialogFooter>
               <Button
@@ -219,6 +291,49 @@ const Payments = () => {
                   </option>
                 ))}
               </select>
+            </div>
+            <div>
+              <Label htmlFor="edit-logo">Bank logo</Label>
+              {selectedPayment?.logo_url && !editLogoFile && !removeEditLogo && (
+                <img
+                  src={selectedPayment.logo_url}
+                  alt=""
+                  className="mt-2 h-16 w-16 rounded object-contain border bg-muted/30"
+                />
+              )}
+              {editLogoPreview && (
+                <img
+                  src={editLogoPreview}
+                  alt="New preview"
+                  className="mt-2 h-16 w-16 rounded object-contain border bg-muted/30"
+                />
+              )}
+              <Input
+                id="edit-logo"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+                className="mt-2"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  setEditLogoFile(f ?? null);
+                  if (f) setRemoveEditLogo(false);
+                }}
+              />
+              {selectedPayment?.logo_url && (
+                <div className="flex items-center gap-2 mt-3">
+                  <Checkbox
+                    id="remove-logo"
+                    checked={removeEditLogo}
+                    onCheckedChange={(c) => {
+                      setRemoveEditLogo(c === true);
+                      if (c === true) setEditLogoFile(null);
+                    }}
+                  />
+                  <Label htmlFor="remove-logo" className="font-normal cursor-pointer">
+                    Remove current logo
+                  </Label>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button

@@ -21,6 +21,33 @@ const typeLabels: Record<ExchangeRate["type"], string> = {
   baht_to_kyat: "Baht to Kyat Price",
 };
 
+function PaymentNameWithLogo({
+  paymentName,
+  currencyType,
+  logoUrl,
+}: {
+  paymentName: string;
+  currencyType: string;
+  logoUrl?: string;
+}) {
+  return (
+    <span className="flex items-center gap-2 min-w-0">
+      {logoUrl ? (
+        <img
+          src={logoUrl}
+          alt=""
+          className="h-6 w-6 shrink-0 rounded object-contain bg-muted/50"
+        />
+      ) : (
+        <span className="h-6 w-6 shrink-0 rounded bg-muted" aria-hidden />
+      )}
+      <span className="truncate text-black">
+        {paymentName} ({currencyType})
+      </span>
+    </span>
+  );
+}
+
 const Dashboard = () => {
   const [summary, setSummary] = useState<WalletSummary | null>(null);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
@@ -157,11 +184,13 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent className="space-y-2 text-black">
             {summary?.byPayment?.map((p) => (
-              <div key={p.payment_id} className="flex justify-between text-sm">
-                <span className="text-black">
-                  {p.paymentName} ({p.currency_type})
-                </span>
-                <span className="font-medium text-black">
+              <div key={p.payment_id} className="flex justify-between gap-2 text-sm items-center">
+                <PaymentNameWithLogo
+                  paymentName={p.paymentName}
+                  currencyType={p.currency_type}
+                  logoUrl={p.logo_url}
+                />
+                <span className="font-medium text-black shrink-0">
                   {Number(p.totalAmount).toLocaleString()}
                 </span>
               </div>
@@ -213,12 +242,14 @@ const Dashboard = () => {
                 {sh.wallets?.map((w) => (
                   <div
                     key={w.payment_id}
-                    className="flex justify-between text-sm"
+                    className="flex justify-between gap-2 text-sm items-center"
                   >
-                    <span className="text-black">
-                      {w.paymentName} ({w.currency_type})
-                    </span>
-                    <span className="font-medium text-black">
+                    <PaymentNameWithLogo
+                      paymentName={w.paymentName}
+                      currencyType={w.currency_type}
+                      logoUrl={w.logo_url}
+                    />
+                    <span className="font-medium text-black shrink-0">
                       {Number(w.amount).toLocaleString()}
                     </span>
                   </div>

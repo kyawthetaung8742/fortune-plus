@@ -6,7 +6,7 @@ export const listByShareholder = async (req, res) => {
   try {
     const shareholderId = new mongoose.Types.ObjectId(req.params.shareholderId);
     const wallets = await Wallet.find({ shareholder_id: shareholderId })
-      .populate("payment_id", "name currency_type")
+      .populate("payment_id", "name currency_type logo_url")
       .lean();
     res.json({ success: true, data: wallets });
   } catch (err) {
@@ -17,7 +17,7 @@ export const listByShareholder = async (req, res) => {
 export const summary = async (req, res) => {
   try {
     const wallets = await Wallet.find()
-      .populate("payment_id", "name currency_type")
+      .populate("payment_id", "name currency_type logo_url")
       .populate("shareholder_id", "name")
       .lean();
 
@@ -29,6 +29,7 @@ export const summary = async (req, res) => {
       const paymentId = payment?._id ? String(payment._id) : (payment ? String(payment) : "");
       const paymentName = payment?.name ?? "";
       const currencyType = payment?.currency_type ?? "";
+      const logo_url = payment?.logo_url ?? undefined;
       const amount = Number(w.amount) || 0;
 
       if (paymentId) {
@@ -36,9 +37,11 @@ export const summary = async (req, res) => {
           payment_id: paymentId,
           paymentName,
           currency_type: currencyType,
+          logo_url,
           totalAmount: 0,
         };
         existing.totalAmount += amount;
+        if (logo_url) existing.logo_url = logo_url;
         byPaymentMap.set(paymentId, existing);
       }
 
@@ -55,11 +58,14 @@ export const summary = async (req, res) => {
           payment_id: paymentId,
           paymentName,
           currency_type: currencyType,
+          logo_url,
           amount,
         };
         const existingWallet = shEntry.wallets.find((x) => x.payment_id === paymentId);
-        if (existingWallet) existingWallet.amount += amount;
-        else shEntry.wallets.push(walletEntry);
+        if (existingWallet) {
+          existingWallet.amount += amount;
+          if (logo_url && !existingWallet.logo_url) existingWallet.logo_url = logo_url;
+        } else shEntry.wallets.push(walletEntry);
       }
     }
 

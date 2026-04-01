@@ -7,9 +7,12 @@ export const deleteFromS3 = async (fileUrl) => {
   const key = fileUrl.split(".amazonaws.com/")[1];
   if (!key) return;
 
+  const bucket = process.env.AWS_S3_BUCKET || process.env.S3_BUCKET;
+  if (!bucket) return;
+
   await s3.send(
     new DeleteObjectCommand({
-      Bucket: process.env.AWS_S3_BUCKET,
+      Bucket: bucket,
       Key: key,
     })
   );

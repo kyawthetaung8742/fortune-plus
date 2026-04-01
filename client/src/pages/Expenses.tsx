@@ -29,6 +29,7 @@ import { paymentApi } from "@/api/payment";
 import type { Expense } from "@/types/app";
 import type { Shareholder } from "@/types/app";
 import type { Payment } from "@/types/app";
+import { PaymentSelect } from "@/components/shared/PaymentSelect";
 import { toast } from "sonner";
 
 const Expenses = () => {
@@ -244,22 +245,20 @@ const Expenses = () => {
               </select>
             </div>
             <div>
-              <Label>Payment</Label>
-              <select
-                value={createForm.payment_id}
-                onChange={(e) =>
-                  setCreateForm((f) => ({ ...f, payment_id: e.target.value }))
-                }
-                required
-                className="w-full border rounded px-3 py-2 mt-1 text-sm"
-              >
-                <option value="">Select payment</option>
-                {payments.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.name} ({p.currency_type})
-                  </option>
-                ))}
-              </select>
+              <Label htmlFor="expense-payment">Payment</Label>
+              <div className="mt-1">
+                <PaymentSelect
+                  id="expense-payment"
+                  value={createForm.payment_id}
+                  onChange={(id) =>
+                    setCreateForm((f) => ({ ...f, payment_id: id }))
+                  }
+                  payments={payments}
+                  allowEmpty
+                  emptyLabel="Select payment"
+                  placeholder="Select payment"
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="expense-date">Date</Label>

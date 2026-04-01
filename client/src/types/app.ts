@@ -24,6 +24,7 @@ export type Payment = {
   _id: string;
   name: string;
   currency_type: "kyat" | "baht";
+  logo_url?: string;
   created_by?: string;
   createdAt: string;
   updatedAt: string;
