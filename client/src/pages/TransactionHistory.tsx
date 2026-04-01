@@ -14,15 +14,86 @@ import type { Shareholder } from "@/types/app";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type PopulatedShareholder = { _id: string; name?: string; phone?: string; email?: string };
+type PopulatedShareholder = {
+  _id: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+};
 type PopulatedPayment = { _id: string; name?: string; currency_type?: string };
 type PopulatedUser = { _id: string; name?: string };
 
-type TransactionRow = Omit<TransactionHistory, "shareholder_id" | "payment_id" | "created_by"> & {
+type TransactionRow = Omit<
+  TransactionHistory,
+  "shareholder_id" | "payment_id" | "created_by"
+> & {
   shareholder_id: string | PopulatedShareholder;
   payment_id: string | PopulatedPayment;
   created_by?: string | PopulatedUser;
 };
+
+function escapeCsvCell(value: string): string {
+  if (/[",\r\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+  return value;
+}
+
+function rowShareholderName(row: TransactionRow): string {
+  const sh = row.shareholder_id;
+  if (typeof sh === "object" && sh && "name" in sh)
+    return (sh as PopulatedShareholder).name ?? "";
+  return String(sh ?? "");
+}
+
+function rowPaymentLabel(row: TransactionRow): string {
+  const p = row.payment_id;
+  if (typeof p === "object" && p && "name" in p) {
+    const pay = p as PopulatedPayment;
+    return `${pay.name ?? ""} (${pay.currency_type ?? ""})`;
+  }
+  return String(p ?? "");
+}
+
+function rowCreatedByName(row: TransactionRow): string {
+  const cb = row.created_by;
+  if (typeof cb === "object" && cb && "name" in cb)
+    return (cb as PopulatedUser).name ?? "—";
+  return cb ? String(cb) : "—";
+}
+
+function buildTransactionHistoryCsv(rows: TransactionRow[]): string {
+  const headers = [
+    "Transaction #",
+    "Date",
+    "Shareholder",
+    "Payment",
+    "Type",
+    "Before",
+    "Amount",
+    "After",
+    "Note",
+    "Created By",
+  ];
+  const lines = [
+    headers.map(escapeCsvCell).join(","),
+    ...rows.map((row) =>
+      [
+        row.transaction_number ?? "",
+        row.date ? new Date(row.date).toLocaleString() : "",
+        rowShareholderName(row),
+        rowPaymentLabel(row),
+        row.transaction_type ?? "",
+        String(row.before_amount ?? ""),
+        String(row.amount ?? ""),
+        String(row.after_amount ?? ""),
+        row.note ?? "",
+        rowCreatedByName(row),
+      ]
+        .map(escapeCsvCell)
+        .join(","),
+    ),
+  ];
+  return lines.join("\r\n");
+}
 
 const TransactionHistoryPage = () => {
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
@@ -43,6 +114,7 @@ const TransactionHistoryPage = () => {
     transaction_type: "",
   });
   const [shareholders, setShareholders] = useState<Shareholder[]>([]);
+  const [exporting, setExporting] = useState(false);
 
   const fetchShareholders = useCallback(async () => {
     try {
@@ -60,11 +132,14 @@ const TransactionHistoryPage = () => {
         page: queryParams.page,
         limit: queryParams.limit,
       };
-      if (queryParams.transaction_number) params.transaction_number = queryParams.transaction_number;
+      if (queryParams.transaction_number)
+        params.transaction_number = queryParams.transaction_number;
       if (queryParams.from) params.from = queryParams.from;
       if (queryParams.to) params.to = queryParams.to;
-      if (queryParams.shareholder_id) params.shareholder_id = queryParams.shareholder_id;
-      if (queryParams.transaction_type) params.transaction_type = queryParams.transaction_type;
+      if (queryParams.shareholder_id)
+        params.shareholder_id = queryParams.shareholder_id;
+      if (queryParams.transaction_type)
+        params.transaction_type = queryParams.transaction_type;
 
       const res = await transactionHistoryApi.list(params);
       if (res.data.success && res.data.data) {
@@ -76,7 +151,9 @@ const TransactionHistoryPage = () => {
       }
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "Failed to load transaction history");
+      toast.error(
+        err.response?.data?.message || "Failed to load transaction history",
+      );
     } finally {
       setLoading(false);
     }
@@ -111,6 +188,51 @@ const TransactionHistoryPage = () => {
     }));
   };
 
+  const handleExportCsv = async () => {
+    setExporting(true);
+    try {
+      const base: TransactionHistoryListParams = {
+        page: 1,
+        limit: 100,
+        transaction_number: queryParams.transaction_number,
+        from: queryParams.from,
+        to: queryParams.to,
+        shareholder_id: queryParams.shareholder_id,
+        transaction_type: queryParams.transaction_type,
+      };
+      const first = await transactionHistoryApi.list(base);
+      if (!first.data.success || !first.data.data) {
+        toast.error("Export failed");
+        return;
+      }
+      const all: TransactionRow[] = [...(first.data.data as TransactionRow[])];
+      const pages = first.data.totalPages ?? 1;
+      for (let p = 2; p <= pages; p++) {
+        const res = await transactionHistoryApi.list({ ...base, page: p });
+        if (res.data.success && res.data.data)
+          all.push(...(res.data.data as TransactionRow[]));
+      }
+      const csv = "\uFEFF" + buildTransactionHistoryCsv(all);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `transaction-history-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(
+        all.length === 0
+          ? "Exported empty CSV (no rows match filters)"
+          : `Exported ${all.length} row${all.length === 1 ? "" : "s"}`,
+      );
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const transactionTypeOptions: { value: string; label: string }[] = [
     { value: "", label: "All types" },
     { value: "deposit", label: "Deposit" },
@@ -134,16 +256,15 @@ const TransactionHistoryPage = () => {
       accessorKey: "date",
       header: "Date",
       cell: ({ row }) =>
-        row.original.date
-          ? new Date(row.original.date).toLocaleString()
-          : "",
+        row.original.date ? new Date(row.original.date).toLocaleString() : "",
     },
     {
       id: "shareholder",
       header: "Shareholder",
       cell: ({ row }) => {
         const sh = row.original.shareholder_id;
-        if (typeof sh === "object" && sh && "name" in sh) return (sh as PopulatedShareholder).name ?? "";
+        if (typeof sh === "object" && sh && "name" in sh)
+          return (sh as PopulatedShareholder).name ?? "";
         return String(sh);
       },
     },
@@ -187,7 +308,8 @@ const TransactionHistoryPage = () => {
       header: "Created By",
       cell: ({ row }) => {
         const cb = row.original.created_by;
-        if (typeof cb === "object" && cb && "name" in cb) return (cb as PopulatedUser).name ?? "—";
+        if (typeof cb === "object" && cb && "name" in cb)
+          return (cb as PopulatedUser).name ?? "—";
         return cb ? String(cb) : "—";
       },
     },
@@ -244,7 +366,7 @@ const TransactionHistoryPage = () => {
             id="filter-shareholder"
             className={cn(
               "mt-1 w-[180px] border rounded-md px-3 py-2 text-sm",
-              "bg-background"
+              "bg-background",
             )}
             value={filterForm.shareholder_id}
             onChange={(e) =>
@@ -268,7 +390,7 @@ const TransactionHistoryPage = () => {
             id="filter-transaction_type"
             className={cn(
               "mt-1 w-[180px] border rounded-md px-3 py-2 text-sm",
-              "bg-background"
+              "bg-background",
             )}
             value={filterForm.transaction_type}
             onChange={(e) =>
@@ -286,6 +408,14 @@ const TransactionHistoryPage = () => {
           </select>
         </div>
         <Button onClick={handleApplyFilters}>Apply</Button>
+        <Button
+          type="button"
+          variant="info"
+          onClick={handleExportCsv}
+          disabled={exporting}
+        >
+          {exporting ? "Exporting…" : "Export CSV"}
+        </Button>
       </div>
 
       {loading ? (
@@ -295,8 +425,8 @@ const TransactionHistoryPage = () => {
           <DataTable columns={columns} data={transactions} />
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
-              Showing {(page - 1) * limit + 1}–
-              {Math.min(page * limit, total)} of {total}
+              Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)}{" "}
+              of {total}
             </p>
             <div className="flex items-center gap-2">
               <Button

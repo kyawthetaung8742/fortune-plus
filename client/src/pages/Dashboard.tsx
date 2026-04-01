@@ -16,8 +16,6 @@ import { exchangeRateApi } from "@/api/exchangeRate";
 import type { ExchangeRate } from "@/types/app";
 import { toast } from "sonner";
 
-const cardClassName = "bg-[#092b5d] text-white border-[#1e3a5f]";
-
 const typeLabels: Record<ExchangeRate["type"], string> = {
   kyat_to_baht: "Kyat to Baht Price",
   baht_to_kyat: "Baht to Kyat Price",
@@ -115,27 +113,27 @@ const Dashboard = () => {
       {exchangeRates.length > 0 && (
         <section>
           <h2 className="text-lg font-medium mb-4">Exchange rates</h2>
-          <Card className={`${cardClassName} max-w-md`}>
+          <Card className="max-w-md text-black">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium text-white">
+              <CardTitle className="text-base font-medium text-black">
                 Exchange rates for Today
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-2 text-black">
               {exchangeRates.map((r) => (
                 <div
                   key={r._id}
                   className="flex items-center justify-between gap-2 py-1"
                 >
-                  <span className="text-white/90 text-sm">
+                  <span className="text-sm text-black">
                     {typeLabels[r.type]}
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold">{r.rate}</span>
+                    <span className="font-semibold text-black">{r.rate}</span>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 shrink-0 text-white hover:bg-white/20"
+                      className="h-8 w-8 shrink-0 text-black hover:bg-black/10 hover:text-black"
                       onClick={() => openEdit(r)}
                     >
                       <Icons.pencil className="h-4 w-4" />
@@ -151,31 +149,31 @@ const Dashboard = () => {
       {/* Overall amount — one card */}
       <section>
         <h2 className="text-lg font-medium mb-4">Overall amount</h2>
-        <Card className={`${cardClassName} max-w-md`}>
+        <Card className="max-w-md text-black">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium text-white">
+            <CardTitle className="text-base font-medium text-black">
               Total by payment
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-2 text-black">
             {summary?.byPayment?.map((p) => (
               <div key={p.payment_id} className="flex justify-between text-sm">
-                <span className="text-white/80">
+                <span className="text-black">
                   {p.paymentName} ({p.currency_type})
                 </span>
-                <span className="font-medium">
+                <span className="font-medium text-black">
                   {Number(p.totalAmount).toLocaleString()}
                 </span>
               </div>
             ))}
             {!summary?.byPayment?.length && (
-              <p className="text-sm text-white/60">No payment totals yet.</p>
+              <p className="text-sm text-black">No payment totals yet.</p>
             )}
             {currencyEntries.length > 0 && (
               <>
-                <div className="border-t border-white/20 my-3" />
+                <div className="border-t border-border my-3" />
                 <div className="space-y-1.5 pt-1">
-                  <p className="text-xs text-white/60 uppercase tracking-wide">
+                  <p className="text-xs text-black uppercase tracking-wide">
                     Total by currency
                   </p>
                   {currencyEntries.map(([currencyType, total]) => (
@@ -183,10 +181,10 @@ const Dashboard = () => {
                       key={currencyType}
                       className="flex justify-between text-sm"
                     >
-                      <span className="text-white/80 capitalize">
+                      <span className="text-black capitalize">
                         {currencyType}
                       </span>
-                      <span className="font-medium">
+                      <span className="font-medium text-black">
                         {Number(total).toLocaleString()}
                       </span>
                     </div>
@@ -205,28 +203,28 @@ const Dashboard = () => {
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {summary?.byShareholder?.map((sh) => (
-            <Card key={sh.shareholder_id} className={cardClassName}>
+            <Card key={sh.shareholder_id} className="text-black">
               <CardHeader>
-                <CardTitle className="text-base font-medium text-white">
+                <CardTitle className="text-base font-medium text-black">
                   {sh.shareholderName}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-2 text-black">
                 {sh.wallets?.map((w) => (
                   <div
                     key={w.payment_id}
                     className="flex justify-between text-sm"
                   >
-                    <span className="text-white/80">
+                    <span className="text-black">
                       {w.paymentName} ({w.currency_type})
                     </span>
-                    <span className="font-medium">
+                    <span className="font-medium text-black">
                       {Number(w.amount).toLocaleString()}
                     </span>
                   </div>
                 ))}
                 {!sh.wallets?.length && (
-                  <p className="text-sm text-white/60">No balance</p>
+                  <p className="text-sm text-black">No balance</p>
                 )}
                 {(sh.wallets?.length ?? 0) > 0 &&
                   (() => {
@@ -251,9 +249,9 @@ const Dashboard = () => {
                     if (entries.length === 0) return null;
                     return (
                       <>
-                        <div className="border-t border-white/20 my-3" />
+                        <div className="border-t border-border my-3" />
                         <div className="space-y-1.5 pt-1">
-                          <p className="text-xs text-white/60 uppercase tracking-wide">
+                          <p className="text-xs text-black uppercase tracking-wide">
                             Total by currency
                           </p>
                           {totalEntries.map(([currencyType, total]) => (
@@ -261,33 +259,33 @@ const Dashboard = () => {
                               key={currencyType}
                               className="flex justify-between text-sm"
                             >
-                              <span className="text-white/80 capitalize">
+                              <span className="text-black capitalize">
                                 {currencyType}
                               </span>
-                              <span className="font-medium">
+                              <span className="font-medium text-black">
                                 {Number(total).toLocaleString()}
                               </span>
                             </div>
                           ))}
                         </div>
                         <div className="pt-2">
-                          <p className="text-xs text-white/60 uppercase tracking-wide mb-2">
+                          <p className="text-xs text-black uppercase tracking-wide mb-2">
                             Deposit / Withdraw
                           </p>
-                          <div className="rounded overflow-hidden border border-white/10">
-                            <table className="w-full text-sm">
+                          <div className="rounded-md overflow-hidden border border-border">
+                            <table className="w-full text-sm text-black">
                               <thead>
-                                <tr className="bg-white/10 text-left">
-                                  <th className="px-2 py-1.5 text-white/80 font-medium capitalize">
+                                <tr className="bg-muted/50 text-left">
+                                  <th className="px-2 py-1.5 text-black font-medium capitalize">
                                     Currency
                                   </th>
-                                  <th className="px-2 py-1.5 text-white/80 font-medium">
+                                  <th className="px-2 py-1.5 text-black font-medium">
                                     Deposit
                                   </th>
-                                  <th className="px-2 py-1.5 text-white/80 font-medium">
+                                  <th className="px-2 py-1.5 text-black font-medium">
                                     Withdraw
                                   </th>
-                                  <th className="px-2 py-1.5 text-white/80 font-medium">
+                                  <th className="px-2 py-1.5 text-black font-medium">
                                     Remain
                                   </th>
                                 </tr>
@@ -303,18 +301,18 @@ const Dashboard = () => {
                                   return (
                                     <tr
                                       key={currencyType}
-                                      className="border-t border-white/10 bg-white/5"
+                                      className="border-t border-border bg-muted/20"
                                     >
-                                      <td className="px-2 py-1.5 text-white/80 capitalize font-medium">
+                                      <td className="px-2 py-1.5 text-black capitalize font-medium">
                                         {currencyType}
                                       </td>
-                                      <td className="px-2 py-1.5">
+                                      <td className="px-2 py-1.5 text-black">
                                         {deposit.toLocaleString()}
                                       </td>
-                                      <td className="px-2 py-1.5">
+                                      <td className="px-2 py-1.5 text-black">
                                         {withdraw.toLocaleString()}
                                       </td>
-                                      <td className="px-2 py-1.5 font-medium">
+                                      <td className="px-2 py-1.5 font-medium text-black">
                                         {(deposit - withdraw).toLocaleString()}
                                       </td>
                                     </tr>

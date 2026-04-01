@@ -33,7 +33,90 @@ type TransactionRow = Omit<
   created_by?: string | PopulatedUser;
 };
 
-const cardClassName = "bg-[#1f3069] text-white border-[#1e3a5f]";
+function escapeCsvCell(value: string): string {
+  if (/[",\r\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+  return value;
+}
+
+function rowCreatedByName(row: TransactionRow): string {
+  const cb = row.created_by;
+  if (typeof cb === "object" && cb && "name" in cb)
+    return (cb as PopulatedUser).name ?? "—";
+  return cb ? String(cb) : "—";
+}
+
+function rowShareholderName(row: TransactionRow): string {
+  const sh = row.shareholder_id;
+  if (typeof sh === "object" && sh && "name" in sh)
+    return (sh as PopulatedShareholder).name ?? "";
+  return String(sh ?? "");
+}
+
+function rowPaymentLabel(row: TransactionRow): string {
+  const p = row.payment_id;
+  if (typeof p === "object" && p && "name" in p) {
+    const pay = p as PopulatedPayment;
+    return `${pay.name ?? ""} (${pay.currency_type ?? ""})`;
+  }
+  return String(p ?? "");
+}
+
+function formatTransactionTypeLabel(type: string): string {
+  return type.replace("_", " ");
+}
+
+function buildExchangeReportCsv(
+  rows: TransactionRow[],
+  summary: {
+    exchange_out: Record<string, number>;
+    exchange_in: Record<string, number>;
+  },
+): string {
+  const detailHeaders = [
+    "Transaction #",
+    "Date",
+    "Shareholder",
+    "Payment",
+    "Type",
+    "Amount",
+    "Note",
+    "Created By",
+  ];
+  const lines: string[] = [
+    detailHeaders.map(escapeCsvCell).join(","),
+    ...rows.map((row) =>
+      [
+        row.transaction_number ?? "",
+        row.date ? new Date(row.date).toLocaleString() : "",
+        rowShareholderName(row),
+        rowPaymentLabel(row),
+        formatTransactionTypeLabel(row.transaction_type ?? ""),
+        String(row.amount ?? ""),
+        row.note ?? "",
+        rowCreatedByName(row),
+      ]
+        .map(escapeCsvCell)
+        .join(","),
+    ),
+    "",
+    "Summary — Exchange Out (currency, total amount)",
+    "Currency,Amount",
+    ...Object.entries(summary.exchange_out)
+      .filter(([, v]) => v > 0)
+      .map(([currency, amount]) =>
+        [currency, String(amount)].map(escapeCsvCell).join(","),
+      ),
+    "",
+    "Summary — Exchange In (currency, total amount)",
+    "Currency,Amount",
+    ...Object.entries(summary.exchange_in)
+      .filter(([, v]) => v > 0)
+      .map(([currency, amount]) =>
+        [currency, String(amount)].map(escapeCsvCell).join(","),
+      ),
+  ];
+  return lines.join("\r\n");
+}
 
 const ExchangeReport = () => {
   const [data, setData] = useState<TransactionRow[]>([]);
@@ -59,6 +142,7 @@ const ExchangeReport = () => {
     shareholder_id: "",
   });
   const [shareholders, setShareholders] = useState<Shareholder[]>([]);
+  const [exporting, setExporting] = useState(false);
 
   const fetchShareholders = useCallback(async () => {
     try {
@@ -125,20 +209,54 @@ const ExchangeReport = () => {
     }));
   };
 
-  const getShareholderName = (row: TransactionRow) => {
-    const sh = row.shareholder_id;
-    if (typeof sh === "object" && sh && "name" in sh)
-      return (sh as PopulatedShareholder).name ?? "";
-    return String(sh);
-  };
-
-  const getPaymentName = (row: TransactionRow) => {
-    const p = row.payment_id;
-    if (typeof p === "object" && p && "name" in p) {
-      const pay = p as PopulatedPayment;
-      return `${pay.name ?? ""} (${pay.currency_type ?? ""})`;
+  const handleExportCsv = async () => {
+    setExporting(true);
+    try {
+      const base: ExchangeReportParams = {
+        page: 1,
+        limit: 100,
+        from: queryParams.from,
+        to: queryParams.to,
+        shareholder_id: queryParams.shareholder_id,
+      };
+      const first = await transactionHistoryApi.exchangeReport(base);
+      if (!first.data.success || !first.data.data) {
+        toast.error("Export failed");
+        return;
+      }
+      const all: TransactionRow[] = [...(first.data.data as TransactionRow[])];
+      const pages = first.data.totalPages ?? 1;
+      const exportSummary = first.data.summary ?? {
+        exchange_out: {},
+        exchange_in: {},
+      };
+      for (let p = 2; p <= pages; p++) {
+        const res = await transactionHistoryApi.exchangeReport({
+          ...base,
+          page: p,
+        });
+        if (res.data.success && res.data.data)
+          all.push(...(res.data.data as TransactionRow[]));
+      }
+      const csv = "\uFEFF" + buildExchangeReportCsv(all, exportSummary);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `exchange-report-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(
+        all.length === 0
+          ? "Exported CSV (no detail rows; summary included if present)"
+          : `Exported ${all.length} row${all.length === 1 ? "" : "s"}`,
+      );
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Export failed");
+    } finally {
+      setExporting(false);
     }
-    return String(p);
   };
 
   const columns: ColumnDef<TransactionRow>[] = [
@@ -152,12 +270,12 @@ const ExchangeReport = () => {
     {
       id: "shareholder",
       header: "Shareholder",
-      cell: ({ row }) => getShareholderName(row.original),
+      cell: ({ row }) => rowShareholderName(row.original),
     },
     {
       id: "payment",
       header: "Payment",
-      cell: ({ row }) => getPaymentName(row.original),
+      cell: ({ row }) => rowPaymentLabel(row.original),
     },
     {
       accessorKey: "transaction_type",
@@ -177,11 +295,7 @@ const ExchangeReport = () => {
     {
       id: "created_by",
       header: "Created By",
-      cell: ({ row }) => {
-        const cb = row.original.created_by;
-        if (typeof cb === "object" && cb && "name" in cb) return (cb as PopulatedUser).name ?? "—";
-        return cb ? String(cb) : "—";
-      },
+      cell: ({ row }) => rowCreatedByName(row.original),
     },
   ];
 
@@ -246,49 +360,57 @@ const ExchangeReport = () => {
           </select>
         </div>
         <Button onClick={handleApplyFilters}>Apply</Button>
+        <Button
+          type="button"
+          variant="info"
+          onClick={handleExportCsv}
+          disabled={exporting}
+        >
+          {exporting ? "Exporting…" : "Export CSV"}
+        </Button>
       </div>
 
       {/* Summary cards */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
-        <Card className={cardClassName}>
+        <Card className="text-black">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium text-white">
+            <CardTitle className="text-base font-medium text-black">
               Exchange Out (by currency)
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1">
+          <CardContent className="space-y-1 text-black">
             {exchangeOutEntries.length > 0 ? (
               exchangeOutEntries.map(([currency, amount]) => (
                 <div key={currency} className="flex justify-between text-sm">
-                  <span className="text-white/80 capitalize">{currency}</span>
-                  <span className="font-medium">
+                  <span className="text-black capitalize">{currency}</span>
+                  <span className="font-medium text-black">
                     {Number(amount).toLocaleString()}
                   </span>
                 </div>
               ))
             ) : (
-              <p className="text-sm text-white/60">No data</p>
+              <p className="text-sm text-black">No data</p>
             )}
           </CardContent>
         </Card>
-        <Card className={cardClassName}>
+        <Card className="text-black">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium text-white">
+            <CardTitle className="text-base font-medium text-black">
               Exchange In (by currency)
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1">
+          <CardContent className="space-y-1 text-black">
             {exchangeInEntries.length > 0 ? (
               exchangeInEntries.map(([currency, amount]) => (
                 <div key={currency} className="flex justify-between text-sm">
-                  <span className="text-white/80 capitalize">{currency}</span>
-                  <span className="font-medium">
+                  <span className="text-black capitalize">{currency}</span>
+                  <span className="font-medium text-black">
                     {Number(amount).toLocaleString()}
                   </span>
                 </div>
               ))
             ) : (
-              <p className="text-sm text-white/60">No data</p>
+              <p className="text-sm text-black">No data</p>
             )}
           </CardContent>
         </Card>
