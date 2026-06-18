@@ -1,6 +1,6 @@
 import { SidebarInset, useSidebar } from "@/components/ui/sidebar";
 import { useLoading } from "@/contexts/LoadingContext";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import NavBar from "./Navbar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -8,6 +8,8 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 const Main = () => {
   const { isLoading } = useLoading();
   const { open } = useSidebar();
+  const { pathname } = useLocation();
+  const isLotteryList = pathname.endsWith("/lottery-list");
   return (
     <>
       <AppSidebar />
@@ -24,8 +26,14 @@ const Main = () => {
           <div className="-ml-6 md:hidden left-0 fixed">
             <SidebarTrigger className="bg-white shadow-md border rounded-full p-2 hover:bg-gray-100" />
           </div>
-          <NavBar />
-          <div className="h-[calc(100vh-7rem)] mt-16 overflow-auto scrollbar-none">
+          {!isLotteryList && <NavBar />}
+          <div
+            className={
+              isLotteryList
+                ? ""
+                : "h-[calc(100vh-7rem)] mt-16 overflow-auto scrollbar-none"
+            }
+          >
             <Outlet />
           </div>
         </main>

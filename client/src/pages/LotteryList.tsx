@@ -173,7 +173,7 @@ const LotteryList = () => {
         <div className="w-full rounded-md p-2">
           <div
             className="grid justify-start gap-0"
-            style={{ gridTemplateColumns: "repeat(auto-fill,450px)" }}
+            style={{ gridTemplateColumns: "repeat(auto-fill,440px)" }}
           >
             {filteredProducts.map((product) => {
               const pairs = getDigitWordPairs(product.name);
