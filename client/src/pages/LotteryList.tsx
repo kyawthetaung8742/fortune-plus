@@ -1,5 +1,5 @@
 import { productApi } from "@/api/product";
-import lotteryCellBg from "@/assets/images/lottery-cell-bg.png";
+import lotteryCellBg from "@/assets/images/lottery.png";
 import type { Product } from "@/types/app";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -65,6 +65,12 @@ const getDigitWordPairs = (
   return [{ digit: "-", word: "-" }];
 };
 
+const getLastTwoDigits = (name: string): number => {
+  const numericOnly = name.trim().replace(/\D/g, "");
+  if (numericOnly.length < 2) return Number(numericOnly) || 0;
+  return Number(numericOnly.slice(-2));
+};
+
 const LotteryList = () => {
   const [loading, setLoading] = useState(true);
   const [lotteryProducts, setLotteryProducts] = useState<Product[]>([]);
@@ -77,9 +83,13 @@ const LotteryList = () => {
       try {
         const res = await productApi.list();
         if (res.data.success && res.data.data) {
-          const onlyLottery = res.data.data.filter((product) =>
-            getCategoryName(product).toLowerCase().includes("lottery"),
-          );
+          const onlyLottery = res.data.data
+            .filter((product) =>
+              getCategoryName(product).toLowerCase().includes("lottery"),
+            )
+            .sort(
+              (a, b) => getLastTwoDigits(a.name) - getLastTwoDigits(b.name),
+            );
           setLotteryProducts(onlyLottery);
         }
       } catch (e: unknown) {
@@ -162,8 +172,8 @@ const LotteryList = () => {
       ) : (
         <div className="w-full rounded-md p-2">
           <div
-            className="grid justify-start gap-1"
-            style={{ gridTemplateColumns: "repeat(auto-fill,200px)" }}
+            className="grid justify-start gap-0"
+            style={{ gridTemplateColumns: "repeat(auto-fill,450px)" }}
           >
             {filteredProducts.map((product) => {
               const pairs = getDigitWordPairs(product.name);
@@ -171,50 +181,52 @@ const LotteryList = () => {
               return (
                 <div
                   key={product._id}
-                  className="relative h-15 w-50 flex flex-col justify-between items-center py-2 px-1 bg-center bg-cover bg-no-repeat"
+                  className="relative h-20 flex flex-col items-end py-2 px-1 bg-center bg-cover bg-no-repeat"
                   style={{ backgroundImage: `url(${lotteryCellBg})` }}
                 >
-                  {!isSoldOut && (
+                  {/* {!isSoldOut && (
                     <span className="absolute left-0 top-0 text-[10px] font-bold leading-none bg-red-900 text-white px-0.5 py-0 rounded-full">
                       {product.quantity}
                     </span>
-                  )}
+                  )} */}
                   {isSoldOut && (
                     <img
                       src="/images/soldout.png"
                       alt="Sold out"
-                      className="absolute inset-0 m-auto h-14 w-14 object-contain pointer-events-none z-30 drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)]"
+                      className="absolute inset-0 m-auto h-18 w-18 object-contain pointer-events-none z-30 drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)]"
                     />
                   )}
-                  <div
-                    className={`w-full grid gap-0.5 text-3xl font-bold leading-none z-10 ${isSoldOut ? "opacity-35" : ""}`}
-                    style={{
-                      gridTemplateColumns: `repeat(${pairs.length}, minmax(0, 1fr))`,
-                    }}
-                  >
-                    {pairs.map((item, index) => (
-                      <span
-                        key={`${product._id}-digit-${index}`}
-                        className="text-center"
-                      >
-                        {item.digit}
-                      </span>
-                    ))}
-                  </div>
-                  <div
-                    className={`w-full grid gap-0.5 text-[7px] font-semibold uppercase leading-tight z-10 ${isSoldOut ? "opacity-35" : ""}`}
-                    style={{
-                      gridTemplateColumns: `repeat(${pairs.length}, minmax(0, 1fr))`,
-                    }}
-                  >
-                    {pairs.map((item, index) => (
-                      <span
-                        key={`${product._id}-word-${index}`}
-                        className="text-center"
-                      >
-                        {item.word}
-                      </span>
-                    ))}
+                  <div className="mr-18 flex flex-col items-end">
+                    <div
+                      className={`w-30 grid gap-4 justify-items-end text-3xl text-[#313133] z-10`}
+                      style={{
+                        gridTemplateColumns: `repeat(${pairs.length}, minmax(0, 1fr))`,
+                      }}
+                    >
+                      {pairs.map((item, index) => (
+                        <span
+                          key={`${product._id}-digit-${index}`}
+                          className="text-right"
+                        >
+                          {item.digit}
+                        </span>
+                      ))}
+                    </div>
+                    <div
+                      className={`w-30 grid gap-4 justify-items-end text-[8px] font-bold uppercase leading-tight z-10`}
+                      style={{
+                        gridTemplateColumns: `repeat(${pairs.length}, minmax(0, 1fr))`,
+                      }}
+                    >
+                      {pairs.map((item, index) => (
+                        <span
+                          key={`${product._id}-word-${index}`}
+                          className="text-right"
+                        >
+                          {item.word}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               );
