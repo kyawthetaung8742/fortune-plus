@@ -51,6 +51,7 @@ const sidebarItems = [
       { title: "Customers", url: "/customers" },
       { title: "Categories", url: "/categories" },
       { title: "Products", url: "/products" },
+      { title: "Lottery List", url: "/lottery-list" },
     ],
   },
   {

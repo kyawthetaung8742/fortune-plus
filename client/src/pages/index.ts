@@ -12,3 +12,4 @@ export { default as Products } from "./Products";
 export { default as Expenses } from "./Expenses";
 export { default as Exchange } from "./Exchange";
 export { default as ExchangeReport } from "./ExchangeReport";
+export { default as LotteryList } from "./LotteryList";

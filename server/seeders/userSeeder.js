@@ -7,7 +7,8 @@ dotenv.config();
 
 const users = [
   { name: "Kyaw Thet Aung", username: "kyawthetaung", password: "kta@12345" },
-  { name: "Cho Cho", username: "chocho", password: "cc@12345" },
+  { name: "Nyi Zin Htun", username: "nyizinhtun", password: "nz@12345" },
+  { name: "Cho Cho", username: "choco", password: "cc@12345" },
 ];
 
 async function seedUsers() {
