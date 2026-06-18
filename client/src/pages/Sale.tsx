@@ -26,6 +26,8 @@ import type { Payment } from "@/types/app";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { PaymentSelect } from "@/components/shared/PaymentSelect";
+import lotteryCellBg from "@/assets/images/lottery_sale.png";
+import { getDigitWordPairs, getLastTwoDigits } from "@/lib/lottery";
 
 type CartItem = {
   product: Product;
@@ -40,6 +42,7 @@ const Sale = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null,
   );
+  const [productNameFilter, setProductNameFilter] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerId, setCustomerId] = useState("");
   const [currencyType, setCurrencyType] = useState<"baht" | "kyat">("baht");
@@ -74,15 +77,21 @@ const Sale = () => {
   );
 
   const filteredProducts = useMemo(() => {
-    if (!selectedCategoryId) return availableProducts;
-    return availableProducts.filter(
-      (p) =>
-        (typeof p.category_id === "object" &&
-          p.category_id?._id === selectedCategoryId) ||
-        (typeof p.category_id === "string" &&
-          p.category_id === selectedCategoryId),
-    );
-  }, [availableProducts, selectedCategoryId]);
+    const nameQuery = productNameFilter.trim().toLowerCase();
+    return availableProducts
+      .filter((p) => {
+        const matchesCategory =
+          !selectedCategoryId ||
+          (typeof p.category_id === "object" &&
+            p.category_id?._id === selectedCategoryId) ||
+          (typeof p.category_id === "string" &&
+            p.category_id === selectedCategoryId);
+        const matchesName =
+          !nameQuery || p.name.toLowerCase().includes(nameQuery);
+        return matchesCategory && matchesName;
+      })
+      .sort((a, b) => getLastTwoDigits(a.name) - getLastTwoDigits(b.name));
+  }, [availableProducts, selectedCategoryId, productNameFilter]);
 
   const fetchCategories = async () => {
     try {
@@ -312,6 +321,18 @@ const Sale = () => {
       <div className="flex-1 min-w-0">
         <h1 className="text-2xl font-semibold mb-4">Sale</h1>
 
+        <div className="mb-4 max-w-sm">
+          <Label htmlFor="sale-product-name-filter">Product name</Label>
+          <Input
+            id="sale-product-name-filter"
+            type="text"
+            value={productNameFilter}
+            onChange={(e) => setProductNameFilter(e.target.value)}
+            placeholder="Search product..."
+            className="mt-1"
+          />
+        </div>
+
         <div className="flex flex-wrap gap-2 mb-4">
           <Button
             variant={selectedCategoryId === null ? "default" : "outline"}
@@ -332,42 +353,74 @@ const Sale = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
-          {filteredProducts.map((product) => (
-            <Card
-              key={product._id}
-              className="cursor-pointer hover:border-primary/50 transition-colors overflow-hidden py-0"
-              onClick={() => addToCart(product)}
-            >
-              <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden relative">
-                {product.image ? (
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full object-cover"
-                  />
-                ) : (
-                  <span className="text-muted-foreground text-4xl">📦</span>
-                )}
-                <p
-                  className="absolute bottom-0 w-full bg-[#092b5d] text-white text-center px-2 py-0 text-md"
-                  title={product.name}
+        <div className="w-full rounded-md p-2">
+          <div
+            className="grid justify-start gap-3"
+            style={{ gridTemplateColumns: "repeat(auto-fill,220px)" }}
+          >
+            {filteredProducts.map((product) => {
+              const pairs = getDigitWordPairs(product.name);
+              const availableQty = getAvailableQuantity(product._id);
+              return (
+                <div
+                  key={product._id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => addToCart(product)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      addToCart(product);
+                    }
+                  }}
+                  className="relative h-20 flex flex-col items-end py-2 px-1 bg-center bg-cover bg-no-repeat cursor-pointer hover:opacity-90 transition-opacity"
+                  style={{ backgroundImage: `url(${lotteryCellBg})` }}
                 >
-                  {product.name}
-                </p>
-                <p className="absolute top-0 right-0 px-2 py-0 text-sm bg-blue-500 text-white rounded-md">
-                  Qty: {product.quantity.toLocaleString()}
-                </p>
-                <p className="absolute top-0 left-0 px-2 py-0 text-sm bg-red-500 text-white rounded-md">
-                  {product.sale_price.toLocaleString()} Baht
-                </p>
-              </div>
-            </Card>
-          ))}
+                  {availableQty > 0 && (
+                    <span className="absolute left-0 top-0 text-[10px] font-bold leading-none bg-red-900 text-white px-0.5 py-0 rounded-full z-20">
+                      {availableQty}
+                    </span>
+                  )}
+                  <div className="flex flex-col items-end">
+                    <div
+                      className="w-30 grid gap-4 justify-items-end text-3xl text-[#313133] z-10"
+                      style={{
+                        gridTemplateColumns: `repeat(${pairs.length}, minmax(0, 1fr))`,
+                      }}
+                    >
+                      {pairs.map((item, index) => (
+                        <span
+                          key={`${product._id}-digit-${index}`}
+                          className="text-right"
+                        >
+                          {item.digit}
+                        </span>
+                      ))}
+                    </div>
+                    <div
+                      className="w-30 grid gap-4 justify-items-end text-[8px] font-bold uppercase leading-tight z-10"
+                      style={{
+                        gridTemplateColumns: `repeat(${pairs.length}, minmax(0, 1fr))`,
+                      }}
+                    >
+                      {pairs.map((item, index) => (
+                        <span
+                          key={`${product._id}-word-${index}`}
+                          className="text-right"
+                        >
+                          {item.word}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
         {filteredProducts.length === 0 && (
           <p className="text-muted-foreground text-center py-8">
-            No products available in this category.
+            No products match your filters.
           </p>
         )}
       </div>
@@ -487,19 +540,28 @@ const Sale = () => {
                     ))}
                   </select>
                 </div>
-                <Dialog open={newCustomerOpen} onOpenChange={setNewCustomerOpen}>
+                <Dialog
+                  open={newCustomerOpen}
+                  onOpenChange={setNewCustomerOpen}
+                >
                   <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                       <DialogTitle>New customer</DialogTitle>
                     </DialogHeader>
-                    <form onSubmit={handleNewCustomerSubmit} className="space-y-4">
+                    <form
+                      onSubmit={handleNewCustomerSubmit}
+                      className="space-y-4"
+                    >
                       <div>
                         <Label htmlFor="new-customer-name">Name</Label>
                         <Input
                           id="new-customer-name"
                           value={newCustomerForm.name}
                           onChange={(e) =>
-                            setNewCustomerForm((f) => ({ ...f, name: e.target.value }))
+                            setNewCustomerForm((f) => ({
+                              ...f,
+                              name: e.target.value,
+                            }))
                           }
                           required
                           className="mt-1"
@@ -512,7 +574,10 @@ const Sale = () => {
                           id="new-customer-phone"
                           value={newCustomerForm.phone}
                           onChange={(e) =>
-                            setNewCustomerForm((f) => ({ ...f, phone: e.target.value }))
+                            setNewCustomerForm((f) => ({
+                              ...f,
+                              phone: e.target.value,
+                            }))
                           }
                           className="mt-1"
                           placeholder="Phone"
@@ -524,7 +589,10 @@ const Sale = () => {
                           id="new-customer-address"
                           value={newCustomerForm.address}
                           onChange={(e) =>
-                            setNewCustomerForm((f) => ({ ...f, address: e.target.value }))
+                            setNewCustomerForm((f) => ({
+                              ...f,
+                              address: e.target.value,
+                            }))
                           }
                           className="mt-1"
                           placeholder="Address"
@@ -536,7 +604,10 @@ const Sale = () => {
                           id="new-customer-note"
                           value={newCustomerForm.note}
                           onChange={(e) =>
-                            setNewCustomerForm((f) => ({ ...f, note: e.target.value }))
+                            setNewCustomerForm((f) => ({
+                              ...f,
+                              note: e.target.value,
+                            }))
                           }
                           className="mt-1 min-h-[80px]"
                           placeholder="Note"
